@@ -168,12 +168,29 @@
     }
     return out;
   }
+  // Typed result tables (numbers stay numbers) for spreadsheet export. {W:{ind:[], team:[]}, M:{...}}
+  function resultTables(athletes, key, teamSize) {
+    const e = ev(key), out = {};
+    for (const cat of ["W", "M"]) {
+      out[cat] = {
+        ind: ranked(athletes, cat, key).map((r) => ({
+          rank: r.st.any ? r.rank : null, relay: r.a.relay || "", lane: r.a.lane || "", team: r.a.uni || "", name: r.a.name,
+          ser: r.st.ser.map((s) => (s.has ? s.t / 10 : null)), total: r.st.any ? r.st.total / 10 : null, x: r.st.any ? r.st.x : null, shots: r.st.count
+        })),
+        team: teams(athletes, cat, key, teamSize).map((t) => ({
+          rank: t.total ? t.rank : null, team: t.uni, total: t.total / 10, x: t.x, counted: t.counted.map((r) => r.a.name).join(" / "), members: t.mem.length
+        }))
+      };
+    }
+    return out;
+  }
+
   const joinRows = (rows, sep, needsQuote) => rows.map((r) => r.map((v) => (needsQuote.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v)).join(sep)).join("\n");
   const toCSV = (athletes, key, teamSize, title) => joinRows(resultRows(athletes, key, teamSize, title), ",", /[",\n]/);
   // Tab-separated: pastes straight into separate cells in Google Sheets / Excel.
   const toTSV = (athletes, key, teamSize, title) => joinRows(resultRows(athletes, key, teamSize, title), "\t", /["\t\n]/);
 
-  const api = { EVENTS, TABS, ev, nSer, parseShot, parseSeries, fmtT, serHas, stats, cmp, ranked, teams, normCat, parseImport, resultRows, toCSV, toTSV, tidyTeam, teamKey };
+  const api = { EVENTS, TABS, ev, nSer, parseShot, parseSeries, fmtT, serHas, stats, cmp, ranked, teams, normCat, parseImport, resultRows, toCSV, toTSV, tidyTeam, teamKey, resultTables };
   root.Scoring = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

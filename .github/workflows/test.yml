@@ -20,6 +20,8 @@ jobs:
           node-version: 22
       - name: Scoring logic vs prototype (parsing, ranking, tie-breaks, teams)
         run: node tests/scoring.test.js
+      - name: Excel (.xlsx) export container, checksums and numbers
+        run: node tests/xlsx.test.js
       - name: JavaScript syntax check
         run: |
           for f in js/*.js; do
