@@ -442,7 +442,7 @@
   // Pistol: one tap per shot (0-10, X). Rifle: whole number, then tenths. Series totals: digits - x . and Next.
   const coarse = !!(window.matchMedia && matchMedia("(pointer: coarse)").matches);
   function kpOn() { return UI.keypad === true || (UI.keypad == null && (coarse || window.innerWidth <= 700)); }
-  let kpWhole = null, lastIn = null;
+  let kpWhole = null, lastIn = null, freshId = null; // freshId: box just selected, so the first key REPLACES its old value
   const inputs = () => [...card.querySelectorAll(UI.entry === "shot" ? ".shots input" : ".serin")];
   function kpTarget() {
     const all = inputs();
@@ -454,7 +454,9 @@
   const nextOf = (el) => { const all = inputs(), i = all.indexOf(el); return i >= 0 ? all[i + 1] || null : null; };
   const prevOf = (el) => { const all = inputs(), i = all.indexOf(el); return i > 0 ? all[i - 1] : null; };
   card.addEventListener("focusin", (e) => {
-    if (e.target.matches("input[data-i],input[data-k2]") && e.target.id !== lastIn) { lastIn = e.target.id; kpWhole = null; renderKeypad(); }
+    if (!e.target.matches("input[data-i],input[data-k2]")) return;
+    freshId = e.target.id;
+    if (e.target.id !== lastIn) { lastIn = e.target.id; kpWhole = null; renderKeypad(); }
   });
 
   function renderKeypad() {
@@ -505,10 +507,10 @@
       return;
     }
     // series total box
-    if (k === "next") { if (commitSer(el)) { const nx = nextOf(el); if (nx) { lastIn = nx.id; nx.focus(); } else { lastIn = null; el.blur(); } renderKeypad(); } }
+    if (k === "next") { if (commitSer(el)) { const nx = nextOf(el); if (nx) { lastIn = nx.id; nx.focus(); freshId = nx.id; } else { lastIn = null; el.blur(); } renderKeypad(); } }
     else if (k === "back") el.value = el.value.slice(0, -1);
-    else el.value += k;
-    if (k !== "next") { el.focus(); el.removeAttribute("aria-invalid"); }
+    else { if (freshId === el.id) el.value = ""; el.value += k; }
+    if (k !== "next") { el.focus(); el.removeAttribute("aria-invalid"); freshId = null; }
   });
   window.addEventListener("resize", () => { if (UI.sel && UI.keypad == null) renderCard(); });
 
