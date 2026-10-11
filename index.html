@@ -19,8 +19,10 @@
       <p class="sub" id="subline">ISSF qualification scoring · ผลการแข่งขันสด</p>
       <p class="sub updated" id="updated"></p>
     </div>
-    <div class="status"><a class="hdr-link" id="boardLink" href="board.html"><span class="l-th">จอใหญ่</span><span class="l-en">Projector</span></a><span class="dot" id="liveDot"></span><span id="liveText">…</span></div>
+    <div class="status"><a class="hdr-link" href="results.html"><span class="l-th">ผลย้อนหลัง</span><span class="l-en">Past results</span></a><a class="hdr-link" id="boardLink" href="board.html"><span class="l-th">จอใหญ่</span><span class="l-en">Projector</span></a><span class="dot" id="liveDot"></span><span id="liveText">…</span></div>
   </header>
+
+  <div class="notice past" id="pastBanner" hidden></div>
 
   <nav class="tabs" id="tabs" aria-label="Categories"></nav>
 
@@ -80,7 +82,11 @@
     if (openId) drawDetail();
     $("fCount").textContent = on && h.count.total ? I18n.L(`แสดง ${h.count.shown} จาก ${h.count.total}`, `Showing ${h.count.shown} of ${h.count.total}`) : "";
     if (state && state.loaded && !comp)
-      $("tbody").innerHTML = Render.noActiveHTML();
+      $("tbody").innerHTML = c ? `<tr><td colspan="20" class="empty">${I18n.L("ไม่พบการแข่งขันนี้ — อาจถูกลบไปแล้ว", "Competition not found — it may have been deleted")} · <a href="results.html">${I18n.L("ดูผลย้อนหลังทั้งหมด", "See all past results")}</a></td></tr>` : Render.noActiveHTML();
+    // viewing a competition that is not the one currently displayed
+    const past = !!(comp && !comp.is_active);
+    $("pastBanner").hidden = !past;
+    if (past) $("pastBanner").innerHTML = `${I18n.L("📁 ผลย้อนหลัง — ไม่ใช่รายการที่แสดงอยู่ตอนนี้", "📁 Past results — not the competition displayed right now")} · <a href="./">${I18n.L("ไปที่ผลสด", "Go to the live scoreboard")}</a> · <a href="results.html">${I18n.L("ผลย้อนหลังทั้งหมด", "All past results")}</a>`;
   }
   // relay dropdown: only shown when there is more than one relay
   function drawRelays(list) {

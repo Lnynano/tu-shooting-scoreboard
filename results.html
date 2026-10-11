@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TU Shooting — Past results</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<script src="js/theme.js"></script>
+<script src="js/i18n.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>TU Shooting <span>Results</span></h1>
+      <p class="sub"><span class="l-th">ผลการแข่งขันย้อนหลัง</span><span class="l-en">Past competitions</span></p>
+    </div>
+    <div class="status">
+      <a class="hdr-link" href="index.html"><span class="l-th">← ผลสดตอนนี้</span><span class="l-en">← Live scoreboard</span></a>
+    </div>
+  </header>
+
+  <div class="bar filters">
+    <label class="f grow" for="q"><span class="l-th">ค้นหาการแข่งขัน</span><span class="l-en">Search competitions</span>
+      <input type="search" id="q" autocomplete="off" placeholder="ชื่อการแข่งขัน" data-en-placeholder="Competition name"></label>
+    <span class="meta" id="count"></span>
+  </div>
+
+  <div id="list" class="comps"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/scoring.js"></script>
+<script src="js/render.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const L = I18n.L, esc = Render.esc;
+  let rows = null, error = "";
+
+  // competitions + the updated_at of their athletes (to show the last scoring time and the athlete count)
+  async function load() {
+    const { data, error: err } = await TU.sb.from("competitions")
+      .select("id,name,event,team_size,is_active,created_at,athletes(updated_at)")
+      .order("created_at", { ascending: false });
+    if (err) { error = err.message; rows = []; draw(); return; }
+    rows = data.map((c) => {
+      const times = (c.athletes || []).map((a) => Date.parse(a.updated_at)).filter(Boolean);
+      return { ...c, count: (c.athletes || []).length, last: times.length ? Math.max(...times) : Date.parse(c.created_at) };
+    })
+      .filter((c) => c.count > 0 || c.is_active)                 // empty competitions have nothing to look at
+      .sort((a, b) => (b.is_active - a.is_active) || (b.last - a.last));
+    error = "";
+    draw();
+  }
+
+  function draw() {
+    const q = $("q").value.trim().toLowerCase();
+    if (rows === null) { $("list").innerHTML = `<p class="empty">${L("กำลังโหลด…", "Loading…")}</p>`; return; }
+    if (error) { $("list").innerHTML = `<div class="notice err">${esc(error)}</div>`; return; }
+    const list = rows.filter((c) => !q || c.name.toLowerCase().includes(q));
+    $("count").textContent = q && rows.length ? L(`แสดง ${list.length} จาก ${rows.length}`, `Showing ${list.length} of ${rows.length}`) : "";
+    if (!list.length) { $("list").innerHTML = `<p class="empty">${rows.length ? L("ไม่พบการแข่งขันที่ตรงกับคำค้น", "No competitions match your search") : L("ยังไม่มีผลการแข่งขัน", "No results yet")}</p>`; return; }
+    const loc = L("th-TH", "en-GB");
+    $("list").innerHTML = list.map((c) => {
+      const d = new Date(c.last);
+      const when = d.toLocaleDateString(loc, { day: "numeric", month: "short", year: "numeric" }) + " " + d.toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit", hour12: false });
+      return `<article class="comp${c.is_active ? " live" : ""}">
+        <div class="cmain"><a class="cname" href="./?c=${esc(c.id)}">${esc(c.name)}</a>${c.is_active ? `<span class="tag add">${L("กำลังแสดงอยู่", "Displayed now")}</span>` : ""}
+          <div class="meta">${esc(Render.evName(c.event))} · ${c.count} ${c.count === 1 ? L("นักกีฬา", "athlete") : L("นักกีฬา", "athletes")} · ${L("คะแนนล่าสุด", "last score")} ${esc(when)}</div></div>
+        <div class="cact"><a class="btnlink primary" href="./?c=${esc(c.id)}">${L("ดูผล", "View")}</a>
+          <a class="btnlink" href="print.html?c=${esc(c.id)}">${L("พิมพ์", "Print")}</a></div>
+      </article>`;
+    }).join("");
+  }
+
+  let t = null;
+  $("q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(draw, 120); });
+  I18n.onChange(draw);
+  draw();
+  load();
+  setInterval(load, 60000);
+})();
+</script>
+</body>
+</html>

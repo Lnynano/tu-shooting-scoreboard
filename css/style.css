@@ -202,3 +202,16 @@ tbody tr.row.click td.name{text-decoration:underline;text-decoration-color:color
 .qrbox .qrimg svg{width:100%;height:auto;display:block}
 .qrbox .qrcap{font-size:clamp(.75rem,1.1vw,1.3rem);font-weight:600;line-height:1.25}
 @media (max-width:700px){.qrbox{display:none}}
+/* past results list + banner */
+.notice.past{background:var(--gold-soft);border-style:solid;border-color:var(--accent)}
+.comps{display:flex;flex-direction:column;gap:10px}
+.comp{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:6px;padding:12px 14px}
+.comp.live{border-left-color:var(--accent)}
+.comp .cname{font-family:var(--display);font-weight:700;font-size:1.35rem;color:var(--ink);text-decoration:none;margin-right:8px;overflow-wrap:anywhere}
+.comp .cname:hover{text-decoration:underline}
+.comp .cmain{min-width:0;flex:1 1 260px}
+.comp .cact{display:flex;gap:8px}
+.btnlink{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:7px 14px;font-size:.88rem;text-decoration:none;color:var(--ink);background:var(--paper)}
+.btnlink.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btnlink:hover{border-color:var(--ink)}
+.comp .tag{display:inline-block;vertical-align:middle;white-space:nowrap}
