@@ -1,0 +1,28 @@
+name: Tests
+
+# Runs on every pull request and every push to main.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  scoring:
+    name: Scoring tests + JS syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Scoring logic vs prototype (parsing, ranking, tie-breaks, teams)
+        run: node tests/scoring.test.js
+      - name: JavaScript syntax check
+        run: |
+          for f in js/*.js; do
+            echo "checking $f"
+            node --check "$f"
+          done
