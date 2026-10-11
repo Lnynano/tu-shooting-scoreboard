@@ -32,6 +32,8 @@
 <script src="js/supabase.js"></script>
 <script src="js/scoring.js"></script>
 <script src="js/render.js"></script>
+<script src="js/vendor/qrcode.js"></script>
+<script src="js/qr.js"></script>
 <script>
 (function () {
   const $ = (id) => document.getElementById(id);
@@ -64,7 +66,9 @@
       sections++;
     }
     if (!sections) html += `<p class="empty">${L("ยังไม่มีนักกีฬา", "No athletes yet")}</p>`;
-    html += `<div class="signs"><div><span></span>${L("ผู้บันทึกคะแนน / Scorer", "Scorer")}</div><div><span></span>${L("ประธานกรรมการ / Chief judge", "Chief judge")}</div></div>`;
+    let qrHtml = "";
+    try { const u = QR.publicUrl(!!c); qrHtml = `<div class="qr-foot"><div class="qrimg">${QR.svg(u)}</div><div><b>${L("สแกนดูผลสดบนมือถือ", "Scan for live results")}</b><br><span class="u">${esc(u)}</span></div></div>`; } catch (e) {}
+    html += qrHtml + `<div class="signs"><div><span></span>${L("ผู้บันทึกคะแนน / Scorer", "Scorer")}</div><div><span></span>${L("ประธานกรรมการ / Chief judge", "Chief judge")}</div></div>`;
     box.innerHTML = html;
     $("printBtn").disabled = !sections;
     if (auto && !autoDone && sections) { autoDone = true; setTimeout(() => window.print(), 400); }

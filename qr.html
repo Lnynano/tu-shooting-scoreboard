@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="th" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TU Shooting — QR code poster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/print.css">
+<script src="js/i18n.js"></script>
+<style>@page{size:A4 portrait;margin:12mm}</style>
+</head>
+<body class="print-page poster-page">
+<div class="wrap">
+  <header class="noprint">
+    <div>
+      <h1>TU Shooting <span>QR</span></h1>
+      <p class="sub"><span class="l-th">โปสเตอร์ QR สำหรับติดที่สนามแข่ง</span><span class="l-en">QR poster for the venue</span></p>
+    </div>
+    <div class="status">
+      <label class="chk" id="lockWrap" hidden><input type="checkbox" id="lock"> <span class="l-th">ล็อกเฉพาะรายการนี้</span><span class="l-en">Lock to this competition</span></label>
+      <a class="hdr-link" href="staff.html"><span class="l-th">กลับ</span><span class="l-en">Back</span></a>
+      <button type="button" id="printBtn" class="primary"><span class="l-th">🖨 พิมพ์</span><span class="l-en">🖨 Print</span></button>
+    </div>
+  </header>
+
+  <main class="poster">
+    <div class="p-org">TU SHOOTING CLUB</div>
+    <h1 class="p-title"><span class="l-th">สแกนดูผลการแข่งขันสด</span><span class="l-en">Scan for live results</span></h1>
+    <div class="p-comp" id="compName"></div>
+    <div class="p-qr" id="qr"></div>
+    <div class="p-sub"><span class="l-th">เปิดกล้องมือถือแล้วสแกน — คะแนนอัปเดตเอง ไม่ต้องรีเฟรช</span><span class="l-en">Point your phone camera at the code — scores update by themselves</span></div>
+    <div class="p-url" id="url"></div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/vendor/qrcode.js"></script>
+<script src="js/qr.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const c = new URLSearchParams(location.search).get("c");
+  let lockOn = false;
+  function draw() {
+    const url = QR.publicUrl(lockOn);
+    $("qr").innerHTML = QR.svg(url);
+    $("url").textContent = url;
+  }
+  $("lockWrap").hidden = !c;                 // the lock option only makes sense when a competition was chosen
+  $("lock").addEventListener("change", () => { lockOn = $("lock").checked; draw(); });
+  $("printBtn").onclick = () => window.print();
+  I18n.onChange(draw);
+  draw();
+  // competition name under the title (the chosen one, otherwise the one currently displayed)
+  let q = TU.sb.from("competitions").select("name");
+  q = c ? q.eq("id", c) : q.eq("is_active", true).order("created_at", { ascending: false }).limit(1);
+  q.maybeSingle().then(({ data }) => { if (data) $("compName").textContent = data.name; });
+})();
+</script>
+</body>
+</html>
