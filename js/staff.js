@@ -70,7 +70,7 @@
   window.addEventListener("beforeunload", (e) => { if (dirty.size || inflight) { e.preventDefault(); e.returnValue = ""; } });
 
   /* ---------- athlete saves (debounced per athlete) ---------- */
-  const fill = (arr) => { const out = (arr || []).map((v) => v || ""); while (out.length && out[out.length - 1] === "") out.pop(); return out; };
+  const fill = (arr) => { const src = arr || [], out = Array.from({ length: src.length }, (_, i) => src[i] || ""); while (out.length && out[out.length - 1] === "") out.pop(); return out; };
   const payload = (a) => ({ name: a.name, uni: a.uni || "", cat: a.cat || "W", relay: a.relay || "", lane: a.lane || "", shots: fill(a.shots), ser: fill(a.ser) });
 
   function queueSave(id, delay = 400) {
