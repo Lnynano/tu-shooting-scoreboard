@@ -125,3 +125,4 @@ body.board td.rank,body.board td.tt{font-size:clamp(1.3rem,2vw,2.6rem)}
 .live-badge{font-family:var(--display);font-weight:700;letter-spacing:.12em;color:#fff;background:var(--accent);padding:2px 10px;border-radius:3px}
 .live-badge.off{background:var(--muted)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.theme-btn{white-space:nowrap}
