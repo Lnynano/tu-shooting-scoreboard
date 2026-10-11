@@ -128,8 +128,8 @@ body.board td.total{font-size:clamp(1.1rem,1.7vw,2.1rem)}
 body.board td.rank,body.board td.tt{font-size:clamp(1.3rem,2vw,2.6rem)}
 .progress{height:3px;background:var(--line);border-radius:2px;overflow:hidden}
 .progress i{display:block;height:100%;width:0;background:var(--gold)}
-.live-badge{font-family:var(--display);font-weight:700;letter-spacing:.12em;color:#fff;background:var(--accent);padding:2px 10px;border-radius:3px}
-.live-badge.off{background:var(--muted)}
+.live-badge{font-family:var(--display);font-weight:700;letter-spacing:.12em;color:var(--gold-ink);background:var(--gold);padding:2px 10px;border-radius:3px}
+.live-badge.off{background:transparent;color:inherit;border:1px solid currentColor;opacity:.7}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .theme-btn{white-space:nowrap}
 .lang-btn{white-space:nowrap;font-weight:600}
