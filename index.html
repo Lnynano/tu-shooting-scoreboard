@@ -18,7 +18,7 @@
       <h1>TU Shooting <span>Scoreboard</span></h1>
       <p class="sub" id="subline">ISSF qualification scoring · ผลการแข่งขันสด</p>
     </div>
-    <div class="status"><span class="dot" id="liveDot"></span><span id="liveText">…</span></div>
+    <div class="status"><a class="hdr-link" id="boardLink" href="board.html"><span class="l-th">จอใหญ่</span><span class="l-en">Projector</span></a><span class="dot" id="liveDot"></span><span id="liveText">…</span></div>
   </header>
 
   <nav class="tabs" id="tabs" aria-label="Categories"></nav>
@@ -45,6 +45,8 @@
   let tab = 0;
   try { tab = Math.min(3, Math.max(0, +localStorage.getItem("tu-tab") || 0)); } catch (e) {}
   let state = null;
+  const c = Render.getParam("c");
+  if (c) $("boardLink").href = "board.html?c=" + encodeURIComponent(c);
 
   function draw() {
     const comp = state && state.comp;
