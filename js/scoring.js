@@ -105,15 +105,23 @@
   }
 
   // Team = athletes grouped by uni within a category; score = best N members; rank by total then X.
+  // Team names are compared ignoring case, extra spaces and Unicode form (Thai NFC).
+  const tidyTeam = (u) => String(u || "").normalize("NFC").replace(/\s+/g, " ").trim();
+  const teamKey = (u) => tidyTeam(u).toLowerCase();
+
   function teams(athletes, cat, key, teamSize) {
     const size = +teamSize || 3, groups = new Map();
     ranked(athletes, cat, key).forEach((r) => {
-      const u = (r.a.uni || "").trim();
+      const u = tidyTeam(r.a.uni);
       if (!u) return;
-      if (!groups.has(u)) groups.set(u, []);
-      groups.get(u).push(r);
+      const k = teamKey(u);                      // "TU", "tu" and " TU  " are the same team
+      if (!groups.has(k)) groups.set(k, { mem: [], names: new Map() });
+      const g = groups.get(k);
+      g.mem.push(r);
+      g.names.set(u, (g.names.get(u) || 0) + 1);
     });
-    const out = [...groups.entries()].map(([uni, mem]) => {
+    const out = [...groups.values()].map(({ mem, names }) => {
+      const uni = [...names.entries()].reduce((best, cur) => (cur[1] > best[1] ? cur : best))[0];   // most common spelling
       const counted = mem.filter((r) => r.st.any).slice(0, size);
       return { uni, mem, counted, total: counted.reduce((s, r) => s + r.st.total, 0), x: counted.reduce((s, r) => s + r.st.x, 0) };
     }).sort((p, q) => q.total - p.total || q.x - p.x);
@@ -165,7 +173,7 @@
   // Tab-separated: pastes straight into separate cells in Google Sheets / Excel.
   const toTSV = (athletes, key, teamSize, title) => joinRows(resultRows(athletes, key, teamSize, title), "\t", /["\t\n]/);
 
-  const api = { EVENTS, TABS, ev, nSer, parseShot, parseSeries, fmtT, serHas, stats, cmp, ranked, teams, normCat, parseImport, resultRows, toCSV, toTSV };
+  const api = { EVENTS, TABS, ev, nSer, parseShot, parseSeries, fmtT, serHas, stats, cmp, ranked, teams, normCat, parseImport, resultRows, toCSV, toTSV, tidyTeam, teamKey };
   root.Scoring = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);
