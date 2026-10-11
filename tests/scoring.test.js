@@ -78,4 +78,17 @@ for (const key of Object.keys(S.EVENTS)) {
   assert.deepStrictEqual(r.map((x) => x.a.id), ["a", "b"]);
   assert.strictEqual(S.fmtT(S.stats(mk("a", ["89-1x"]), "ap30").total, "int"), "89");
 }
+// Team name matching: spelling variants are one team, most common spelling is shown
+{
+  const mk = (id, uni, ser) => ({ id, cat: "W", uni, name: id, shots: [], ser });
+  const ath = [mk("a", "TU", ["90"]), mk("b", "tu", ["89"]), mk("c", " TU  ", ["88"]), mk("d", "T U", ["99"]), mk("e", "KU", ["91"])];
+  const t = S.teams(ath, "W", "ap30", 3);
+  const tu = t.find((x) => x.uni === "TU");
+  assert.ok(tu, "TU team exists");
+  assert.deepStrictEqual(tu.mem.map((r) => r.a.id).sort(), ["a", "b", "c"], "TU / tu / ' TU  ' are one team");
+  assert.strictEqual(tu.total, (90 + 89 + 88) * 10);
+  assert.ok(t.find((x) => x.uni === "T U"), "'T U' (different letters/spacing inside) stays a separate team");
+  assert.strictEqual(S.teams([mk("p", "มหาวิทยาลัย  ธรรมศาสตร์", ["90"]), mk("q", "มหาวิทยาลัย ธรรมศาสตร์", ["90"])], "W", "ap30", 3).length, 1, "extra inner spaces ignored");
+  assert.strictEqual(S.teams([mk("x", "KU", ["90"]), mk("y", "ku", ["90"]), mk("z", "ku", ["90"])], "W", "ap30", 3)[0].uni, "ku", "most common spelling wins");
+}
 console.log(`OK — ${checks} comparisons against the prototype logic matched`);
