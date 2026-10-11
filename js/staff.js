@@ -428,6 +428,7 @@
     p.hidden = !p.hidden; if (p.hidden) return;
     p.innerHTML = `<h2>${L("วางข้อมูลจาก Excel / Google Sheets", "Paste from Excel / Google Sheets")} <small>${L("คัดลอกทั้งตารางแล้ววางด้านล่าง (แถวหัวตารางจะถูกข้ามอัตโนมัติ)", "Copy the whole table and paste below (a header row is skipped automatically)")}</small></h2>
     <p class="rules">${L("ลำดับคอลัมน์:", "Column order:")} <b>${L("ชื่อ · สังกัด · ประเภท (W/M หรือ หญิง/ชาย) · ผลัด · เลน · S1 · S2 · …", "name · team · category (W/M) · relay · lane · S1 · S2 · …")}</b> — ${L("คอลัมน์ S เว้นว่างได้ ใส่ได้ทั้ง", "S columns may be empty; use")} <code>89-1x</code> ${L("หรือ", "or")} <code>89</code></p>
+    <p class="rules"><a href="templates/athlete-import-template.xlsx" download>${L("⬇ ดาวน์โหลดเทมเพลต Excel", "⬇ Download the Excel template")}</a></p>
     <pre>name\tteam\tcat\trelay\tlane\tS1\tS2
 Somying Jaidee\tTU\tW\t1\t3\t89-1x\t87-0x
 Somchai Yingtrong\tTU\tM\t1\t4</pre>
