@@ -177,11 +177,13 @@
   function stopApp() {
     appRunning = false;
     clearInterval(compPoll);
+    closeHistory();
     if (W) { W.stop(); W = null; }
     comps = []; pending.clear(); sending.clear(); UI.sel = null;
   }
   function selectComp(id) {
     if (W) W.stop();
+    closeHistory();
     UI.comp = id; UI.sel = null; saveUI();
     W = TU.watch({
       id,
@@ -209,7 +211,7 @@
   }
   function renderMeta() {
     const c = comp();
-    for (const id of ["compName", "event", "teamSize", "activeBtn", "delCompBtn", "importBtn", "copyBtn"]) $(id).disabled = !c;
+    for (const id of ["compName", "event", "teamSize", "activeBtn", "delCompBtn", "importBtn", "copyBtn", "histBtn"]) $(id).disabled = !c;
     $("addForm").hidden = !c;
     if (!c) { $("subline").textContent = L("สร้างการแข่งขันก่อน · Create a competition to begin", "Create a competition to begin"); $("links").innerHTML = ""; $("activeBadge").hidden = true; return; }
     $("event").value = c.event;
@@ -558,6 +560,92 @@ Somchai Yingtrong\tTU\tM\t1\t4</pre>
     };
   };
 
+  /* ---------- change history ---------- */
+  let histRows = [], histOnly = false, histTimer = null;
+  const hv = (x) => (x === "" || x == null ? "—" : x);
+  const fieldLabel = (f) => ({ name: L("ชื่อ", "Name"), uni: L("สังกัด", "Team"), cat: L("ประเภท", "Category"), relay: L("ผลัด", "Relay"), lane: L("ลู่", "Lane") }[f] || f);
+  function describeChange(c) {
+    if (c.f === "shots") return `S${Math.floor(c.i / 10) + 1} ${L("นัดที่", "shot")} ${(c.i % 10) + 1}: ${hv(c.old)} → ${hv(c.new)}`;
+    if (c.f === "ser") return `S${c.i + 1} ${L("รวมชุด", "total")}: ${hv(c.old)} → ${hv(c.new)}`;
+    return `${fieldLabel(c.f)}: ${hv(c.old)} → ${hv(c.new)}`;
+  }
+  function renderHistory() {
+    const p = $("historyPanel");
+    if (p.hidden) return;
+    const c = comp();
+    const rows = histRows.map((e) => {
+      const who = esc((e.changed_by_email || L("ระบบ / SQL", "system / SQL")).split("@")[0]);
+      const when = esc(new Date(e.changed_at).toLocaleString(L("th-TH", "en-GB"), { dateStyle: "short", timeStyle: "medium" }));
+      let what, act = "";
+      if (e.action === "insert") what = `<span class="tag add">${L("เพิ่ม", "Added")}</span>`;
+      else if (e.action === "delete") {
+        what = `<span class="tag del">${L("ลบ", "Deleted")}</span>`;
+        if (c && !athletes().has(e.athlete_id) && e.snapshot) act = `<button type="button" class="ghost" data-restore="${e.id}">${L("กู้คืน", "Restore")}</button>`;
+      } else {
+        const ch = e.changes || [];
+        what = ch.slice(0, 4).map((x) => `<span class="chg">${esc(describeChange(x))}</span>`).join("") + (ch.length > 4 ? `<span class="chg">+${ch.length - 4}</span>` : "");
+        if (athletes().has(e.athlete_id)) act = `<button type="button" class="ghost" data-undo="${e.id}">${L("ย้อนกลับ", "Undo")}</button>`;
+      }
+      return `<div class="hrow"><div class="hmeta">${when}<br>${who}</div><div class="hbody"><b>${esc(e.athlete_name)}</b> ${what}</div><div>${act}</div></div>`;
+    }).join("");
+    $("histList").innerHTML = rows || `<p class="empty">${L("ยังไม่มีประวัติการแก้ไข", "No changes recorded yet")}</p>`;
+  }
+  async function loadHistory() {
+    const c = comp(); if (!c || $("historyPanel").hidden) return;
+    let q = sb.from("athlete_log").select("*").eq("competition_id", c.id).order("changed_at", { ascending: false }).order("id", { ascending: false }).limit(150);
+    if (histOnly && UI.sel) q = q.eq("athlete_id", UI.sel);
+    const { data, error } = await q;
+    if (error) { $("histList").innerHTML = `<div class="notice err">${esc(error.message)}</div>`; return; }
+    histRows = data; renderHistory();
+  }
+  function histShell() {
+    $("historyPanel").innerHTML = `<h2>${L("ประวัติการแก้ไข", "Change history")} <small>${L("ใคร แก้อะไร เมื่อไร — แสดง 150 รายการล่าสุด", "who changed what and when — latest 150")}</small></h2>
+      <div class="rowbtns" style="margin:0 0 8px"><label class="chk"><input type="checkbox" id="histOnly"${histOnly ? " checked" : ""}> ${L("เฉพาะนักกีฬาที่เลือก", "Selected athlete only")}</label>
+      <button type="button" id="histRefresh">${L("รีเฟรช", "Refresh")}</button><button type="button" class="ghost" id="histClose">${L("ปิด", "Close")}</button><span class="meta" id="histMsg"></span></div>
+      <div id="histList"></div>`;
+    $("histOnly").onchange = () => { histOnly = $("histOnly").checked; loadHistory(); };
+    $("histRefresh").onclick = loadHistory;
+    $("histClose").onclick = closeHistory;
+  }
+  function closeHistory() { $("historyPanel").hidden = true; clearInterval(histTimer); }
+  $("histBtn").onclick = () => {
+    const p = $("historyPanel");
+    if (!p.hidden) { closeHistory(); return; }
+    p.hidden = false; histShell(); loadHistory();
+    clearInterval(histTimer); histTimer = setInterval(loadHistory, 10000);
+  };
+  $("historyPanel").addEventListener("click", async (ev2) => {
+    const u = ev2.target.closest("[data-undo]"), rs = ev2.target.closest("[data-restore]");
+    if (!u && !rs) return;
+    const e = histRows.find((x) => String(x.id) === (u || rs).dataset[u ? "undo" : "restore"]);
+    if (!e) return;
+    $("histMsg").textContent = "";
+    if (u) {
+      await flushAll();
+      const a = athletes().get(e.athlete_id);
+      if (!a) { $("histMsg").textContent = L("นักกีฬาถูกลบแล้ว — ใช้ “กู้คืน”", "Athlete was deleted — use Restore"); return; }
+      const fields = {}, shots = {}, ser = {};
+      let n = 0, skipped = 0;
+      for (const c of e.changes || []) {
+        const cur = c.f === "shots" ? (a.shots || [])[c.i] || "" : c.f === "ser" ? (a.ser || [])[c.i] || "" : a[c.f] ?? "";
+        if (cur !== c.new) { skipped++; continue; }
+        n++;
+        if (c.f === "shots") shots[c.i] = c.old; else if (c.f === "ser") ser[c.i] = c.old; else fields[c.f] = c.old;
+      }
+      if (!n) { $("histMsg").textContent = L("ค่านี้ถูกแก้ไปแล้ว ย้อนกลับไม่ได้", "Changed again since — cannot undo"); return; }
+      const res = await run(() => sb.rpc("patch_athlete", { aid: a.id, fields, shot_patch: shots, ser_patch: ser }));
+      if (res && res.data) athletes().set(a.id, overlay(res.data));
+      refreshLive(); renderBoard(); if (!$("card").contains(document.activeElement)) renderCard();
+      $("histMsg").textContent = res ? L(`ย้อนกลับแล้ว ${n} รายการ${skipped ? ` (ข้าม ${skipped} ที่ถูกแก้ภายหลัง)` : ""}`, `Undone: ${n} change(s)${skipped ? ` (${skipped} skipped, changed since)` : ""}`) : "";
+    } else {
+      const sn = e.snapshot, c = comp();
+      if (!c) return;
+      const res = await run(() => sb.from("athletes").insert({ id: sn.id, competition_id: c.id, name: sn.name, uni: sn.uni, cat: sn.cat, relay: sn.relay, lane: sn.lane, shots: sn.shots, ser: sn.ser }).select("*").single());
+      if (res && res.data) { athletes().set(res.data.id, res.data); renderTabs(); renderBoard(); $("histMsg").textContent = L("กู้คืนนักกีฬาแล้ว", "Athlete restored"); }
+    }
+    loadHistory();
+  });
+
   /* ---------- CSV ---------- */
   $("copyBtn").onclick = async () => {
     const c = comp(); if (!c) return;
@@ -575,6 +663,7 @@ Somchai Yingtrong\tTU\tM\t1\t4</pre>
 
   I18n.onChange(() => {
     fillSelects(); paintDenied();
+    if (!$("historyPanel").hidden) { histShell(); renderHistory(); }
     if (appRunning) { renderAll(); showNotice(""); }
   });
   paintDenied();

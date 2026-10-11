@@ -156,3 +156,13 @@ button.kp.kp-n{background:var(--accent);border-color:var(--accent);color:#fff;fo
 #userBox{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
 #userEmail{overflow-wrap:anywhere;min-width:0}
 header>div{min-width:0}
+/* change history */
+.hrow{display:grid;grid-template-columns:9.5em minmax(0,1fr) auto;gap:10px;align-items:start;padding:8px 0;border-top:1px dashed var(--line)}
+.hmeta{font-family:var(--mono);font-size:.74rem;color:var(--muted);line-height:1.4}
+.hbody{font-size:.9rem;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}
+.chg{font-family:var(--mono);font-size:.8rem;background:var(--bg);border:1px solid var(--line);border-radius:3px;padding:1px 6px}
+.tag{font-size:.75rem;border-radius:99px;padding:1px 8px;border:1px solid currentColor}
+.tag.add{color:var(--ok)}
+.tag.del{color:var(--accent)}
+label.chk{display:inline-flex;gap:6px;align-items:center;font-size:.85rem}
+@media (max-width:620px){.hrow{grid-template-columns:1fr auto}.hmeta{grid-column:1/-1}}
