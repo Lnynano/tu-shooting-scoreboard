@@ -9,67 +9,73 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <link rel="stylesheet" href="css/style.css">
+<script src="js/theme.js"></script>
+<script src="js/i18n.js"></script>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div>
       <h1>TU Shooting <span>Staff</span></h1>
-      <p class="sub" id="subline">กรอกคะแนน · Score entry</p>
+      <p class="sub" id="subline"><span class="l-th">กรอกคะแนน · Score entry</span><span class="l-en">Score entry</span></p>
     </div>
     <div class="status">
-      <span id="userBox" hidden><span id="userEmail"></span> <button type="button" id="logoutBtn" class="ghost">ออกจากระบบ</button></span>
-      <span class="dot" id="liveDot"></span><span id="liveText">กำลังเชื่อมต่อ…</span>
+      <span id="userBox" hidden><span id="userEmail"></span> <button type="button" id="logoutBtn" class="ghost"><span class="l-th">ออกจากระบบ</span><span class="l-en">Log out</span></button></span>
+      <span class="dot" id="liveDot"></span><span id="liveText">…</span>
     </div>
   </header>
 
-  <p id="loadingView" class="meta">กำลังตรวจสอบการเข้าสู่ระบบ…</p>
+  <p id="loadingView" class="meta"><span class="l-th">กำลังตรวจสอบการเข้าสู่ระบบ…</span><span class="l-en">Checking sign-in…</span></p>
 
   <!-- login -->
   <section class="panel login" id="authView" hidden>
-    <h2>เข้าสู่ระบบ <small>Staff login</small></h2>
+    <h2><span class="l-th">เข้าสู่ระบบ <small>Staff login</small></span><span class="l-en">Staff login</span></h2>
     <form id="loginForm" class="login" style="margin:0">
-      <label class="f" for="email">อีเมล / Email<input type="email" id="email" autocomplete="username" required></label>
-      <label class="f" for="password">รหัสผ่าน / Password<input type="password" id="password" autocomplete="current-password" required></label>
-      <button class="primary" type="submit" id="loginBtn">เข้าสู่ระบบ</button>
+      <label class="f" for="email"><span class="l-th">อีเมล / Email</span><span class="l-en">Email</span><input type="email" id="email" autocomplete="username" required></label>
+      <label class="f" for="password"><span class="l-th">รหัสผ่าน / Password</span><span class="l-en">Password</span><input type="password" id="password" autocomplete="current-password" required></label>
+      <button class="primary" type="submit" id="loginBtn"><span class="l-th">เข้าสู่ระบบ</span><span class="l-en">Log in</span></button>
       <div id="loginErr" class="notice err" hidden></div>
     </form>
   </section>
 
   <!-- signed in but not staff -->
   <section class="panel login" id="deniedView" hidden>
-    <h2>ไม่มีสิทธิ์ <small>No access</small></h2>
-    <div class="notice err" id="deniedMsg">บัญชีนี้ไม่มีสิทธิ์กรอกคะแนน</div>
-    <button type="button" id="deniedLogout">ออกจากระบบ</button>
+    <h2><span class="l-th">ไม่มีสิทธิ์ <small>No access</small></span><span class="l-en">No access</span></h2>
+    <div class="notice err" id="deniedMsg"></div>
+    <button type="button" id="deniedLogout"><span class="l-th">ออกจากระบบ</span><span class="l-en">Log out</span></button>
   </section>
 
   <!-- staff app -->
   <div id="appView" hidden style="display:flex;flex-direction:column;gap:14px">
     <div class="bar">
-      <label class="f" for="compSel">การแข่งขัน / Competition
+      <label class="f" for="compSel">
+        <span class="l-th">การแข่งขัน / Competition</span><span class="l-en">Competition</span>
         <select id="compSel"></select>
       </label>
-      <button type="button" id="newCompBtn">+ สร้างการแข่งขัน</button>
-      <label class="f" for="compName">ชื่อ / Name
-        <input type="text" id="compName" placeholder="เช่น TU Open 2026" autocomplete="off">
+      <button type="button" id="newCompBtn"><span class="l-th">+ สร้างการแข่งขัน</span><span class="l-en">+ New competition</span></button>
+      <label class="f" for="compName">
+        <span class="l-th">ชื่อ / Name</span><span class="l-en">Name</span>
+        <input type="text" id="compName" placeholder="เช่น TU Open 2026" data-en-placeholder="e.g. TU Open 2026" autocomplete="off">
       </label>
-      <label class="f" for="event">รายการ / Event
+      <label class="f" for="event">
+        <span class="l-th">รายการ / Event</span><span class="l-en">Event</span>
         <select id="event"></select>
       </label>
-      <label class="f" for="teamSize">นับทีม / Team counts
-        <select id="teamSize"><option value="2">ดีที่สุด 2 คน</option><option value="3">ดีที่สุด 3 คน</option><option value="4">ดีที่สุด 4 คน</option></select>
+      <label class="f" for="teamSize">
+        <span class="l-th">นับทีม / Team counts</span><span class="l-en">Team counts</span>
+        <select id="teamSize"></select>
       </label>
-      <button type="button" id="activeBtn" class="primary">ตั้งเป็นรายการที่แสดง</button>
-      <button type="button" id="delCompBtn" class="ghost">ลบการแข่งขัน</button>
-      <span class="meta" id="activeBadge" hidden>● กำลังแสดงบนหน้าสาธารณะ</span>
+      <button type="button" id="activeBtn" class="primary"><span class="l-th">ตั้งเป็นรายการที่แสดง</span><span class="l-en">Set as displayed</span></button>
+      <button type="button" id="delCompBtn" class="ghost"><span class="l-th">ลบการแข่งขัน</span><span class="l-en">Delete competition</span></button>
+      <span class="meta" id="activeBadge" hidden><span class="l-th">● กำลังแสดงบนหน้าสาธารณะ</span><span class="l-en">● Shown on the public page</span></span>
     </div>
     <div class="bar">
-      <button type="button" id="importBtn">วางจาก Excel</button>
-      <button type="button" id="copyBtn">คัดลอกผล (CSV)</button>
+      <button type="button" id="importBtn"><span class="l-th">วางจาก Excel</span><span class="l-en">Paste from Excel</span></button>
+      <button type="button" id="copyBtn"><span class="l-th">คัดลอกผล (CSV)</span><span class="l-en">Copy results (CSV)</span></button>
       <span class="spacer"></span>
       <span class="linkrow" id="links"></span>
       <span class="save" id="saveStatus" role="status" aria-live="polite"></span>
-      <button type="button" id="retryBtn" hidden>ลองบันทึกใหม่</button>
+      <button type="button" id="retryBtn" hidden><span class="l-th">ลองบันทึกใหม่</span><span class="l-en">Retry save</span></button>
     </div>
     <div id="notice" hidden></div>
     <div id="confirmBox" hidden></div>
@@ -79,28 +85,30 @@
 
     <main class="two">
       <section class="panel" aria-labelledby="resH">
-        <h2 id="resH"><span id="boardTitle">ผลการแข่งขัน</span> <small id="evInfo"></small></h2>
+        <h2 id="resH"><span id="boardTitle"></span> <small id="evInfo"></small></h2>
         <div class="tablebox"><table>
           <thead id="thead"></thead>
           <tbody id="tbody"></tbody>
         </table></div>
         <form class="add" id="addForm">
-          <input type="text" id="newName" placeholder="ชื่อนักกีฬา / Name" aria-label="Athlete name" required>
-          <input type="text" id="newUni" placeholder="มหาวิทยาลัย / ทีม" aria-label="University or team">
-          <button class="primary" type="submit">+ เพิ่มนักกีฬา</button>
+          <input type="text" id="newName" placeholder="ชื่อนักกีฬา / Name" data-en-placeholder="Athlete name" aria-label="Athlete name" required>
+          <input type="text" id="newUni" placeholder="มหาวิทยาลัย / ทีม" data-en-placeholder="University / team" aria-label="University or team">
+          <button class="primary" type="submit"><span class="l-th">+ เพิ่มนักกีฬา</span><span class="l-en">+ Add athlete</span></button>
         </form>
       </section>
 
       <section class="panel" aria-labelledby="cardH">
-        <h2 id="cardH">ใบบันทึกคะแนน / Score card</h2>
+        <h2 id="cardH"><span class="l-th">ใบบันทึกคะแนน / Score card</span><span class="l-en">Score card</span></h2>
         <div id="card"></div>
         <p class="hint" id="hint"></p>
       </section>
     </main>
 
     <section class="panel rules">
-      <b>กรอกแบบรวมชุด:</b> พิมพ์ <code>89-1x</code> (89 คะแนน, 1 X) หรือ <code>89</code> · ปืนยาวทศนิยมพิมพ์ <code>102.4</code>.
-      <b>ทีละนัด:</b> 0–10 หรือ X (pistol) · 0.0–10.9 (rifle) — ถ้ากรอกทีละนัดในชุดใด จะใช้ค่าทีละนัดของชุดนั้น.
+      <span class="l-th"><b>กรอกแบบรวมชุด:</b> พิมพ์ <code>89-1x</code> (89 คะแนน, 1 X) หรือ <code>89</code> · ปืนยาวทศนิยมพิมพ์ <code>102.4</code>.
+      <b>ทีละนัด:</b> 0–10 หรือ X (pistol) · 0.0–10.9 (rifle) — ถ้ากรอกทีละนัดในชุดใด จะใช้ค่าทีละนัดของชุดนั้น.</span>
+      <span class="l-en"><b>Series total:</b> type <code>89-1x</code> (89 points, 1 X) or <code>89</code> · decimal rifle: <code>102.4</code>.
+      <b>Per shot:</b> 0–10 or X (pistol) · 0.0–10.9 (rifle) — if any shot is entered in a series, the per-shot values are used for that series.</span>
     </section>
   </div>
 </div>

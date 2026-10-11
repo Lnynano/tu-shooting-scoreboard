@@ -1,0 +1,36 @@
+/* Light / dark toggle. Remembers the choice; default follows the OS (css/style.css handles both). */
+(function () {
+  "use strict";
+  const KEY = "tu-theme", root = document.documentElement;
+  const mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+  let saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) {}
+  if (saved === "light" || saved === "dark") root.setAttribute("data-theme", saved);
+
+  const isDark = () => (root.getAttribute("data-theme") ? root.getAttribute("data-theme") === "dark" : !!(mq && mq.matches));
+
+  function init() {
+    const host = document.querySelector("header .status");
+    if (!host) return;
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "ghost theme-btn";
+    const paint = () => {
+      const d = isDark();
+      const L = window.I18n ? window.I18n.L : (th) => th;
+      b.textContent = d ? "☀" : "☾";
+      b.title = d ? L("โหมดสว่าง", "Light mode") : L("โหมดมืด", "Dark mode");
+      b.setAttribute("aria-label", d ? L("สลับเป็นโหมดสว่าง (Light mode)", "Switch to light mode") : L("สลับเป็นโหมดมืด (Dark mode)", "Switch to dark mode"));
+    };
+    b.onclick = () => {
+      const next = isDark() ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try { localStorage.setItem(KEY, next); } catch (e) {}
+      paint();
+    };
+    paint();
+    host.insertBefore(b, host.firstChild);
+    if (mq && mq.addEventListener) mq.addEventListener("change", paint);
+    if (window.I18n) window.I18n.onChange(paint);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
+})();
