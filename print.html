@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="th" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TU Shooting — Results sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/print.css">
+<script src="js/i18n.js"></script>
+</head>
+<body class="print-page">
+<div class="wrap">
+  <header class="noprint">
+    <div>
+      <h1>TU Shooting <span>Results</span></h1>
+      <p class="sub"><span class="l-th">ใบสรุปผลสำหรับพิมพ์</span><span class="l-en">Printable results sheet</span></p>
+    </div>
+    <div class="status">
+      <a class="hdr-link" href="index.html" id="backLink"><span class="l-th">กลับ</span><span class="l-en">Back</span></a>
+      <button type="button" id="printBtn" class="primary" disabled><span class="l-th">🖨 พิมพ์</span><span class="l-en">🖨 Print</span></button>
+    </div>
+  </header>
+
+  <div id="sheet"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/scoring.js"></script>
+<script src="js/render.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const L = I18n.L, esc = Render.esc;
+  let state = null, auto = Render.getParam("print") === "1", autoDone = false;
+  const c = Render.getParam("c");
+  if (c) $("backLink").href = "index.html?c=" + encodeURIComponent(c);
+
+  function draw() {
+    const comp = state && state.comp;
+    const box = $("sheet");
+    if (!state || !state.loaded) { box.innerHTML = `<p class="empty">${L("กำลังโหลดผลการแข่งขัน…", "Loading results…")}</p>`; return; }
+    if (!comp) { box.innerHTML = `<p class="empty">${L("ยังไม่มีการแข่งขันที่เปิดแสดงอยู่", "No active competition")}</p>`; return; }
+    document.title = comp.name + " — " + L("ผลการแข่งขัน", "Results");
+    const list = state.list();
+    const now = new Date().toLocaleString(L("th-TH", "en-GB"), { dateStyle: "long", timeStyle: "short" });
+    let html = `<div class="sheet-head">
+      <div class="org">TU Shooting Club</div>
+      <h1 class="ttl">${esc(comp.name)}</h1>
+      <div class="evl">${esc(Render.evName(comp.event))} · ${L(`ทีม: นับ ${comp.team_size} คนที่ดีที่สุด`, `Teams: best ${comp.team_size} count`)}</div>
+      <div class="when">${L("พิมพ์เมื่อ", "Printed")} ${esc(now)}</div>
+    </div>`;
+    let sections = 0, menStarted = false;
+    for (let tab = 0; tab < 4; tab++) {
+      const h = Render.boardHTML({ athletes: list, event: comp.event, teamSize: comp.team_size, tab });
+      if (!h.count.total) continue;
+      const menStart = tab >= 2 && !menStarted && sections > 0;
+      if (tab >= 2) menStarted = true;
+      html += `<section class="sheet${menStart ? " men-start" : ""}"><h2>${esc(h.title)} <small>${esc(h.info)}</small></h2><table><thead>${h.thead}</thead><tbody>${h.tbody}</tbody></table></section>`;
+      sections++;
+    }
+    if (!sections) html += `<p class="empty">${L("ยังไม่มีนักกีฬา", "No athletes yet")}</p>`;
+    html += `<div class="signs"><div><span></span>${L("ผู้บันทึกคะแนน / Scorer", "Scorer")}</div><div><span></span>${L("ประธานกรรมการ / Chief judge", "Chief judge")}</div></div>`;
+    box.innerHTML = html;
+    $("printBtn").disabled = !sections;
+    if (auto && !autoDone && sections) { autoDone = true; setTimeout(() => window.print(), 400); }
+  }
+  $("printBtn").onclick = () => window.print();
+  TU.watch({ id: c, onChange: (s) => { state = s; draw(); }, onStatus: () => {} });
+  I18n.onChange(draw);
+  draw();
+})();
+</script>
+</body>
+</html>
