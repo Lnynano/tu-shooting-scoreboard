@@ -1,7 +1,7 @@
 /* Staff page: login, staff check, competitions, athletes, score entry, import, CSV. */
 (function () {
   "use strict";
-  const sb = TU.sb, S = Scoring, esc = Render.esc;
+  const sb = TU.sb, S = Scoring, esc = Render.esc, L = I18n.L;
   const $ = (id) => document.getElementById(id);
   const UKEY = "tu-staff-ui-v1";
 
@@ -32,7 +32,7 @@
   }
   function confirmUI(box, msg, yes, fn) {
     box.hidden = false;
-    box.innerHTML = `<div class="confirm"><span>${msg}</span><button type="button" class="primary" data-a="y">${yes}</button><button type="button" data-a="n">ยกเลิก</button></div>`;
+    box.innerHTML = `<div class="confirm"><span>${msg}</span><button type="button" class="primary" data-a="y">${yes}</button><button type="button" data-a="n">${L("ยกเลิก", "Cancel")}</button></div>`;
     box.querySelector('[data-a="y"]').onclick = () => { box.hidden = true; box.innerHTML = ""; fn(); };
     box.querySelector('[data-a="n"]').onclick = () => { box.hidden = true; box.innerHTML = ""; };
   }
@@ -43,14 +43,14 @@
     el.className = "save";
     if (errMsg) {
       el.classList.add("err");
-      el.textContent = "✕ บันทึกไม่สำเร็จ: " + errMsg;
+      el.textContent = L("✕ บันทึกไม่สำเร็จ: ", "✕ Save failed: ") + errMsg;
     } else if (inflight) {
-      el.textContent = "กำลังบันทึก…";
+      el.textContent = L("กำลังบันทึก…", "Saving…");
     } else if (dirty.size) {
-      el.textContent = "รอบันทึก…";
+      el.textContent = L("รอบันทึก…", "Pending…");
     } else if (lastOk) {
       el.classList.add("ok");
-      el.textContent = "✓ บันทึกแล้ว " + new Date(lastOk).toLocaleTimeString("th-TH");
+      el.textContent = L("✓ บันทึกแล้ว ", "✓ Saved ") + new Date(lastOk).toLocaleTimeString(L("th-TH", "en-GB"));
     } else el.textContent = "";
     $("retryBtn").hidden = !(errMsg && dirty.size);
   }
@@ -88,7 +88,7 @@
       if (!a) { dirty.delete(id); return; }
       const v = ver.get(id);
       const res = await run(() => sb.from("athletes").update(payload(a)).eq("id", id).select("id"));
-      if (res && !res.data.length) { errMsg = "ไม่พบแถวหรือไม่มีสิทธิ์แก้ไข (RLS)"; setSave(); return; }
+      if (res && !res.data.length) { errMsg = L("ไม่พบแถวหรือไม่มีสิทธิ์แก้ไข (RLS)", "Row not found or no permission (RLS)"); setSave(); return; }
       if (res && ver.get(id) === v) dirty.delete(id);
     }).finally(() => { if (chains.get(id) === p) chains.delete(id); setSave(); });
     chains.set(id, p);
@@ -98,6 +98,10 @@
   $("retryBtn").onclick = () => { errMsg = ""; flushAll(); };
 
   /* ---------- auth ---------- */
+  let deniedErr = null;
+  function paintDenied() {
+    $("deniedMsg").textContent = deniedErr ? L("ตรวจสอบสิทธิ์ไม่ได้: ", "Could not verify access: ") + deniedErr : L("บัญชีนี้ไม่มีสิทธิ์กรอกคะแนน", "This account is not allowed to enter scores");
+  }
   $("loginForm").addEventListener("submit", async (f) => {
     f.preventDefault();
     $("loginBtn").disabled = true; $("loginErr").hidden = true;
@@ -105,7 +109,7 @@
     $("loginBtn").disabled = false;
     if (error) {
       $("loginErr").hidden = false;
-      $("loginErr").textContent = /invalid/i.test(error.message) ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง" : "เข้าสู่ระบบไม่ได้: " + error.message;
+      $("loginErr").textContent = /invalid/i.test(error.message) ? L("อีเมลหรือรหัสผ่านไม่ถูกต้อง", "Incorrect email or password") : L("เข้าสู่ระบบไม่ได้: ", "Could not sign in: ") + error.message;
     } else $("password").value = "";
   });
   async function logout() {
@@ -124,11 +128,11 @@
     view("loadingView");
     const { data, error } = await sb.from("staff").select("user_id").eq("user_id", userId).maybeSingle();
     if (error) {
-      $("deniedMsg").textContent = "ตรวจสอบสิทธิ์ไม่ได้: " + error.message;
+      deniedErr = error.message; paintDenied();
       view("deniedView"); return;
     }
     if (!data) {
-      $("deniedMsg").textContent = "บัญชีนี้ไม่มีสิทธิ์กรอกคะแนน";
+      deniedErr = null; paintDenied();
       view("deniedView"); return;
     }
     view("appView");
@@ -140,7 +144,7 @@
   /* ---------- app lifecycle ---------- */
   let compPoll = null;
   async function loadComps() {
-    try { comps = await TU.listCompetitions(); renderCompSel(); } catch (e) { showNotice("โหลดรายการแข่งขันไม่ได้: " + e.message); }
+    try { comps = await TU.listCompetitions(); renderCompSel(); } catch (e) { showNotice(L("โหลดรายการแข่งขันไม่ได้: ", "Could not load competitions: ") + e.message); }
   }
   async function startApp() {
     appRunning = true;
@@ -179,27 +183,27 @@
     const sel = $("compSel");
     sel.innerHTML = comps.length
       ? comps.map((c) => `<option value="${esc(c.id)}">${c.is_active ? "★ " : ""}${esc(c.name)}</option>`).join("")
-      : `<option value="">— ยังไม่มีการแข่งขัน —</option>`;
+      : `<option value="">${L("— ยังไม่มีการแข่งขัน —", "— No competitions —")}</option>`;
     if (UI.comp) sel.value = UI.comp;
   }
   function renderMeta() {
     const c = comp();
     for (const id of ["compName", "event", "teamSize", "activeBtn", "delCompBtn", "importBtn", "copyBtn"]) $(id).disabled = !c;
     $("addForm").hidden = !c;
-    if (!c) { $("subline").textContent = "สร้างการแข่งขันก่อน · Create a competition to begin"; $("links").innerHTML = ""; $("activeBadge").hidden = true; return; }
+    if (!c) { $("subline").textContent = L("สร้างการแข่งขันก่อน · Create a competition to begin", "Create a competition to begin"); $("links").innerHTML = ""; $("activeBadge").hidden = true; return; }
     $("event").value = c.event;
     $("teamSize").value = String(Math.min(4, Math.max(2, c.team_size)));
     if (document.activeElement !== $("compName")) $("compName").value = c.name;
-    $("subline").textContent = `${c.name} · ${ev().name}`;
+    $("subline").textContent = `${c.name} · ${Render.evName(evKey())}`;
     $("activeBtn").hidden = c.is_active;
     $("activeBadge").hidden = !c.is_active;
-    $("links").innerHTML = `<a href="index.html?c=${esc(c.id)}" target="_blank" rel="noopener">หน้าสาธารณะ</a> · <a href="board.html?c=${esc(c.id)}" target="_blank" rel="noopener">จอใหญ่</a>`;
+    $("links").innerHTML = `<a href="index.html?c=${esc(c.id)}" target="_blank" rel="noopener">${L("หน้าสาธารณะ", "Public page")}</a> · <a href="board.html?c=${esc(c.id)}" target="_blank" rel="noopener">${L("จอใหญ่", "Projector")}</a>`;
   }
   async function patchComp(patch) {
     const c = comp(); if (!c) return;
     Object.assign(c, patch);
     const res = await run(() => sb.from("competitions").update(patch).eq("id", c.id).select("id"));
-    if (res && !res.data.length) { errMsg = "ไม่มีสิทธิ์แก้ไขการแข่งขัน (RLS)"; setSave(); }
+    if (res && !res.data.length) { errMsg = L("ไม่มีสิทธิ์แก้ไขการแข่งขัน (RLS)", "No permission to edit the competition (RLS)"); setSave(); }
     loadComps();
   }
   $("compSel").addEventListener("change", () => { if ($("compSel").value) selectComp($("compSel").value); });
@@ -214,15 +218,15 @@
     clearTimeout(nameTimer);
     const v = $("compName").value.trim();
     nameTimer = setTimeout(() => { if (v) patchComp({ name: v }); }, 400);
-    if (comp() && v) { comp().name = v; $("subline").textContent = `${v} · ${ev().name}`; renderCompSel(); }
+    if (comp() && v) { comp().name = v; $("subline").textContent = `${v} · ${Render.evName(evKey())}`; renderCompSel(); }
   });
   $("teamSize").addEventListener("change", () => { patchComp({ team_size: +$("teamSize").value }); renderBoard(); });
   $("delCompBtn").onclick = () => {
     const c = comp(); if (!c) return;
     const n = athletes().size;
-    confirmUI($("confirmBox"), `ลบการแข่งขัน “${esc(c.name)}” พร้อมนักกีฬา ${n} คนและคะแนนทั้งหมด? กู้คืนไม่ได้`, "ลบการแข่งขัน", async () => {
+    confirmUI($("confirmBox"), L(`ลบการแข่งขัน “${esc(c.name)}” พร้อมนักกีฬา ${n} คนและคะแนนทั้งหมด? กู้คืนไม่ได้`, `Delete competition “${esc(c.name)}” with its ${n} athletes and all scores? This cannot be undone.`), L("ลบการแข่งขัน", "Delete competition"), async () => {
       const res = await run(() => sb.from("competitions").delete().eq("id", c.id).select("id"));
-      if (res && !res.data.length) { errMsg = "ลบไม่สำเร็จ (ไม่พบแถวหรือไม่มีสิทธิ์)"; setSave(); return; }
+      if (res && !res.data.length) { errMsg = L("ลบไม่สำเร็จ (ไม่พบแถวหรือไม่มีสิทธิ์)", "Delete failed (row not found or no permission)"); setSave(); return; }
       if (!res) return;
       for (const id of [...dirty]) { clearTimeout(timers.get(id)); dirty.delete(id); }
       if (W) { W.stop(); W = null; }
@@ -237,12 +241,19 @@
     const res = await run(() => sb.rpc("set_active_competition", { cid: c.id }));
     await loadComps();
     const now = comps.find((x) => x.id === c.id);
-    if (res && now && !now.is_active) { errMsg = "ตั้งเป็นรายการที่แสดงไม่สำเร็จ (ไม่มีสิทธิ์?)"; setSave(); }
+    if (res && now && !now.is_active) { errMsg = L("ตั้งเป็นรายการที่แสดงไม่สำเร็จ (ไม่มีสิทธิ์?)", "Could not set as displayed (no permission?)"); setSave(); }
     else if (now) { c.is_active = true; }
     renderMeta();
   };
 
-  $("event").innerHTML = Object.entries(S.EVENTS).map(([k, v]) => `<option value="${k}">${v.name}</option>`).join("");
+  function fillSelects() {
+    const ek = $("event").value, tk = $("teamSize").value;
+    $("event").innerHTML = Object.entries(S.EVENTS).map(([k, v]) => `<option value="${k}">${L(v.name, v.nameEn)}</option>`).join("");
+    $("teamSize").innerHTML = [2, 3, 4].map((n) => `<option value="${n}">${L(`ดีที่สุด ${n} คน`, `Best ${n} count`)}</option>`).join("");
+    if (ek) $("event").value = ek;
+    if (tk) $("teamSize").value = tk;
+  }
+  fillSelects();
   $("event").addEventListener("change", () => {
     const c = comp(); if (!c) return;
     const nk = $("event").value, old = c.event, same = S.EVENTS[nk].mode === S.EVENTS[old].mode;
@@ -257,7 +268,7 @@
     };
     if (has && !same) {
       $("event").value = old;
-      confirmUI($("confirmBox"), "รายการนี้ใช้ระบบคะแนนต่างกัน — เปลี่ยนแล้วคะแนนทั้งหมดจะถูกล้าง (รายชื่อยังอยู่)", "เปลี่ยนและล้างคะแนน", () => { $("event").value = nk; apply(); });
+      confirmUI($("confirmBox"), L("รายการนี้ใช้ระบบคะแนนต่างกัน — เปลี่ยนแล้วคะแนนทั้งหมดจะถูกล้าง (รายชื่อยังอยู่)", "This event uses a different scoring system — changing it clears all scores (athletes stay)"), L("เปลี่ยนและล้างคะแนน", "Change and clear scores"), () => { $("event").value = nk; apply(); });
     } else apply();
   });
 
@@ -269,8 +280,8 @@
       { title: $("boardTitle"), info: $("evInfo"), thead: $("thead"), tbody: $("tbody") },
       { athletes: [...athletes().values()], event: evKey(), teamSize: teamSize(), tab: UI.tab, selectedId: UI.sel, clickable: true,
         loading: W && !(s && s.loaded),
-        emptyHint: comp() ? "เพิ่มชื่อด้านล่าง หรือกด <b>วางจาก Excel</b> เพื่อนำเข้าทั้งรายชื่อ" : "" });
-    if (!comp() && !(W && !(s && s.loaded))) $("tbody").innerHTML = `<tr><td colspan="20" class="empty">ยังไม่มีการแข่งขัน — กด “+ สร้างการแข่งขัน”</td></tr>`;
+        emptyHint: comp() ? L("เพิ่มชื่อด้านล่าง หรือกด <b>วางจาก Excel</b> เพื่อนำเข้าทั้งรายชื่อ", "Add names below, or press <b>Paste from Excel</b> to import the whole list") : "" });
+    if (!comp() && !(W && !(s && s.loaded))) $("tbody").innerHTML = `<tr><td colspan="20" class="empty">${L("ยังไม่มีการแข่งขัน — กด “+ สร้างการแข่งขัน”", "No competition yet — press “+ New competition”")}</td></tr>`;
   }
   function renderAll() { renderCompSel(); renderMeta(); renderTabs(); renderBoard(); renderCard(); setSave(); }
   $("tabs").addEventListener("click", (c) => { const b = c.target.closest("[data-t]"); if (b) { UI.tab = +b.dataset.t; saveUI(); renderTabs(); renderBoard(); } });
@@ -286,17 +297,17 @@
   const card = $("card");
   function renderCard() {
     const e = ev(), a = athletes().get(UI.sel), n = S.nSer(evKey());
-    if (!a) { card.innerHTML = `<p class="empty">เลือกนักกีฬาจากตารางเพื่อบันทึกคะแนน</p>`; $("hint").textContent = ""; return; }
+    if (!a) { card.innerHTML = `<p class="empty">${L("เลือกนักกีฬาจากตารางเพื่อบันทึกคะแนน", "Select an athlete in the table to enter scores")}</p>`; $("hint").textContent = ""; return; }
     const st = S.stats(a, evKey());
     let h = `<div class="fields">
-      <label class="f" for="fName" style="grid-column:1/-1">ชื่อ / Name<input type="text" id="fName" data-k="name" value="${esc(a.name)}"></label>
-      <label class="f" for="fUni">สังกัด / Team<input type="text" id="fUni" data-k="uni" value="${esc(a.uni || "")}"></label>
-      <label class="f" for="fCat">ประเภท<select id="fCat" data-k="cat"><option value="W"${(a.cat || "W") === "W" ? " selected" : ""}>หญิง / W</option><option value="M"${a.cat === "M" ? " selected" : ""}>ชาย / M</option></select></label>
-      <label class="f" for="fRelay">ผลัด / Relay<input type="text" id="fRelay" data-k="relay" value="${esc(a.relay || "")}"></label>
-      <label class="f" for="fLane">เลน / Lane<input type="text" id="fLane" data-k="lane" value="${esc(a.lane || "")}"></label>
+      <label class="f" for="fName" style="grid-column:1/-1">${L("ชื่อ / Name", "Name")}<input type="text" id="fName" data-k="name" value="${esc(a.name)}"></label>
+      <label class="f" for="fUni">${L("สังกัด / Team", "Team")}<input type="text" id="fUni" data-k="uni" value="${esc(a.uni || "")}"></label>
+      <label class="f" for="fCat">${L("ประเภท", "Category")}<select id="fCat" data-k="cat"><option value="W"${(a.cat || "W") === "W" ? " selected" : ""}>${L("หญิง / W", "Women / W")}</option><option value="M"${a.cat === "M" ? " selected" : ""}>${L("ชาย / M", "Men / M")}</option></select></label>
+      <label class="f" for="fRelay">${L("ผลัด / Relay", "Relay")}<input type="text" id="fRelay" data-k="relay" value="${esc(a.relay || "")}"></label>
+      <label class="f" for="fLane">${L("เลน / Lane", "Lane")}<input type="text" id="fLane" data-k="lane" value="${esc(a.lane || "")}"></label>
     </div>
     <div class="cardtop"><div class="big" id="bigTotal"></div>
-      <div class="seg" role="group" aria-label="Entry mode"><button type="button" data-m="series" aria-pressed="${UI.entry === "series"}">รวมชุด</button><button type="button" data-m="shot" aria-pressed="${UI.entry === "shot"}">ทีละนัด</button></div></div>`;
+      <div class="seg" role="group" aria-label="Entry mode"><button type="button" data-m="series" aria-pressed="${UI.entry === "series"}">${L("รวมชุด", "Series total")}</button><button type="button" data-m="shot" aria-pressed="${UI.entry === "shot"}">${L("ทีละนัด", "Per shot")}</button></div></div>`;
     for (let k = 0; k < n; k++) {
       h += `<div class="series"><span class="lab">S${k + 1}</span>`;
       if (UI.entry === "shot") {
@@ -308,26 +319,26 @@
         }
         h += `</div>`;
       } else if (S.serHas(a, k)) {
-        h += `<span class="locked">กรอกทีละนัดไว้แล้ว — สลับเป็น “ทีละนัด” เพื่อแก้</span>`;
+        h += `<span class="locked">${L("กรอกทีละนัดไว้แล้ว — สลับเป็น “ทีละนัด” เพื่อแก้", "Entered per shot — switch to “Per shot” to edit")}</span>`;
       } else {
         const raw = (a.ser || [])[k] || "", p = S.parseSeries(raw, e.mode);
-        h += `<input type="text" class="serin" id="ser-${k}" data-k2="${k}" value="${esc(raw)}" placeholder="${e.mode === "int" ? "เช่น 89-1x" : "เช่น 102.4"}" autocomplete="off" aria-label="Series ${k + 1} total"${p === false ? ' aria-invalid="true"' : ""}>`;
+        h += `<input type="text" class="serin" id="ser-${k}" data-k2="${k}" value="${esc(raw)}" placeholder="${e.mode === "int" ? L("เช่น 89-1x", "e.g. 89-1x") : L("เช่น 102.4", "e.g. 102.4")}" autocomplete="off" aria-label="Series ${k + 1} total"${p === false ? ' aria-invalid="true"' : ""}>`;
       }
       h += `<span class="st" id="st-${k}"></span></div>`;
     }
-    h += `<div class="rowbtns"><button type="button" id="delBtn" class="ghost">ลบนักกีฬา</button></div><div id="cardConfirm"></div>`;
+    h += `<div class="rowbtns"><button type="button" id="delBtn" class="ghost">${L("ลบนักกีฬา", "Delete athlete")}</button></div><div id="cardConfirm"></div>`;
     card.innerHTML = h;
     updateCardTotals(st);
     $("hint").textContent = UI.entry === "series"
-      ? (e.mode === "int" ? "พิมพ์คะแนนรวมชุดกับจำนวน X เช่น 89-1x หรือ 89 แล้วกด Enter" : "พิมพ์คะแนนรวมชุดทศนิยม เช่น 102.4 แล้วกด Enter")
-      : (e.mode === "int" ? "พิมพ์ 0–10 หรือ X ทีละนัด ระบบเลื่อนช่องให้อัตโนมัติ · Backspace ในช่องว่างเพื่อย้อนกลับ" : "พิมพ์ 0.0–10.9 ทีละนัด ระบบเลื่อนช่องให้อัตโนมัติ · Backspace ในช่องว่างเพื่อย้อนกลับ");
-    $("delBtn").onclick = () => confirmUI($("cardConfirm"), `ลบ “${esc(a.name)}” และคะแนนทั้งหมด?`, "ลบ", async () => {
+      ? (e.mode === "int" ? L("พิมพ์คะแนนรวมชุดกับจำนวน X เช่น 89-1x หรือ 89 แล้วกด Enter", "Type the series total and X count, e.g. 89-1x or 89, then press Enter") : L("พิมพ์คะแนนรวมชุดทศนิยม เช่น 102.4 แล้วกด Enter", "Type the decimal series total, e.g. 102.4, then press Enter"))
+      : (e.mode === "int" ? L("พิมพ์ 0–10 หรือ X ทีละนัด ระบบเลื่อนช่องให้อัตโนมัติ · Backspace ในช่องว่างเพื่อย้อนกลับ", "Type 0–10 or X per shot; focus advances automatically · Backspace in an empty box goes back") : L("พิมพ์ 0.0–10.9 ทีละนัด ระบบเลื่อนช่องให้อัตโนมัติ · Backspace ในช่องว่างเพื่อย้อนกลับ", "Type 0.0–10.9 per shot; focus advances automatically · Backspace in an empty box goes back"));
+    $("delBtn").onclick = () => confirmUI($("cardConfirm"), L(`ลบ “${esc(a.name)}” และคะแนนทั้งหมด?`, `Delete “${esc(a.name)}” and all scores?`), L("ลบ", "Delete"), async () => {
       const id = UI.sel; UI.sel = null; saveUI();
       clearTimeout(timers.get(id)); dirty.delete(id);
       athletes().delete(id);
       renderAll();
       const res = await run(() => sb.from("athletes").delete().eq("id", id).select("id"));
-      if (res && !res.data.length) { errMsg = "ลบไม่สำเร็จ (ไม่พบแถวหรือไม่มีสิทธิ์)"; setSave(); }
+      if (res && !res.data.length) { errMsg = L("ลบไม่สำเร็จ (ไม่พบแถวหรือไม่มีสิทธิ์)", "Delete failed (row not found or no permission)"); setSave(); }
       if (W) W.refresh();
     });
   }
@@ -335,7 +346,7 @@
     const e = ev(), a = athletes().get(UI.sel);
     if (!a || !$("bigTotal")) return;
     st = st || S.stats(a, evKey());
-    $("bigTotal").innerHTML = `${S.fmtT(st.total, e.mode)}${e.mode === "int" || st.x ? `<span class="x">${st.x}X</span>` : ""}<small>${st.count}/${e.shots} นัด</small>`;
+    $("bigTotal").innerHTML = `${S.fmtT(st.total, e.mode)}${e.mode === "int" || st.x ? `<span class="x">${st.x}X</span>` : ""}<small>${st.count}/${e.shots} ${L("นัด", "shots")}</small>`;
     st.ser.forEach((s, k) => { const el = $("st-" + k); if (el) el.innerHTML = s.has ? S.fmtT(s.t, e.mode) + (e.mode === "int" || s.x ? `<span class="x">-${s.x}x</span>` : "") : "·"; });
   }
   function refreshLive() { renderTabs(); renderBoard(); updateCardTotals(); }
@@ -415,30 +426,30 @@
   $("importBtn").onclick = () => {
     const p = $("importPanel");
     p.hidden = !p.hidden; if (p.hidden) return;
-    p.innerHTML = `<h2>วางข้อมูลจาก Excel / Google Sheets <small>คัดลอกทั้งตารางแล้ววางด้านล่าง (แถวหัวตารางจะถูกข้ามอัตโนมัติ)</small></h2>
-    <p class="rules">ลำดับคอลัมน์: <b>ชื่อ · สังกัด · ประเภท (W/M หรือ หญิง/ชาย) · ผลัด · เลน · S1 · S2 · …</b> — คอลัมน์ S เว้นว่างได้ ใส่ได้ทั้ง <code>89-1x</code> หรือ <code>89</code></p>
-    <pre>ชื่อ\tสังกัด\tประเภท\tผลัด\tเลน\tS1\tS2
-นางสาวสมหญิง ใจดี\tTU\tW\t1\t3\t89-1x\t87-0x
-นายสมชาย ยิงตรง\tTU\tM\t1\t4</pre>
+    p.innerHTML = `<h2>${L("วางข้อมูลจาก Excel / Google Sheets", "Paste from Excel / Google Sheets")} <small>${L("คัดลอกทั้งตารางแล้ววางด้านล่าง (แถวหัวตารางจะถูกข้ามอัตโนมัติ)", "Copy the whole table and paste below (a header row is skipped automatically)")}</small></h2>
+    <p class="rules">${L("ลำดับคอลัมน์:", "Column order:")} <b>${L("ชื่อ · สังกัด · ประเภท (W/M หรือ หญิง/ชาย) · ผลัด · เลน · S1 · S2 · …", "name · team · category (W/M) · relay · lane · S1 · S2 · …")}</b> — ${L("คอลัมน์ S เว้นว่างได้ ใส่ได้ทั้ง", "S columns may be empty; use")} <code>89-1x</code> ${L("หรือ", "or")} <code>89</code></p>
+    <pre>name\tteam\tcat\trelay\tlane\tS1\tS2
+Somying Jaidee\tTU\tW\t1\t3\t89-1x\t87-0x
+Somchai Yingtrong\tTU\tM\t1\t4</pre>
     <textarea id="impText" rows="7" aria-label="Pasted rows"></textarea>
-    <div class="rowbtns"><button type="button" class="primary" id="impGo">นำเข้า</button><button type="button" class="ghost" id="impClose">ปิด</button><span class="meta" id="impMsg"></span></div>`;
+    <div class="rowbtns"><button type="button" class="primary" id="impGo">${L("นำเข้า", "Import")}</button><button type="button" class="ghost" id="impClose">${L("ปิด", "Close")}</button><span class="meta" id="impMsg"></span></div>`;
     $("impClose").onclick = () => { p.hidden = true; };
     $("impText").addEventListener("input", () => {
       const r = S.parseImport($("impText").value, evKey());
-      $("impMsg").textContent = r.rows.length ? `พบ ${r.rows.length} คน${r.bad ? ` · ค่าคะแนนอ่านไม่ได้ ${r.bad} ช่อง (จะเว้นว่าง)` : ""}` : "";
+      $("impMsg").textContent = r.rows.length ? L(`พบ ${r.rows.length} คน${r.bad ? ` · ค่าคะแนนอ่านไม่ได้ ${r.bad} ช่อง (จะเว้นว่าง)` : ""}`, `Found ${r.rows.length} athletes${r.bad ? ` · ${r.bad} unreadable score cells (left empty)` : ""}`) : "";
     });
     $("impGo").onclick = async () => {
       const c = comp(), r = S.parseImport($("impText").value, evKey());
-      if (!r.rows.length) { $("impMsg").textContent = "ไม่พบข้อมูล — วางจากตารางที่มีคอลัมน์ชื่อก่อน"; return; }
+      if (!r.rows.length) { $("impMsg").textContent = L("ไม่พบข้อมูล — วางจากตารางที่มีคอลัมน์ชื่อก่อน", "No data found — paste a table whose first column is the name"); return; }
       $("impGo").disabled = true;
       let done = 0;
       for (let i = 0; i < r.rows.length; i += 100) {
         const chunk = r.rows.slice(i, i + 100).map((x) => ({ ...x, competition_id: c.id }));
         const res = await run(() => sb.from("athletes").insert(chunk).select("*"));
-        if (!res) { $("impMsg").textContent = `นำเข้าไม่สำเร็จ (นำเข้าแล้ว ${done}/${r.rows.length}) — ดูข้อความผิดพลาดด้านบน`; $("impGo").disabled = false; if (W) W.refresh(); return; }
+        if (!res) { $("impMsg").textContent = L(`นำเข้าไม่สำเร็จ (นำเข้าแล้ว ${done}/${r.rows.length}) — ดูข้อความผิดพลาดด้านบน`, `Import failed (${done}/${r.rows.length} imported) — see the error above`); $("impGo").disabled = false; if (W) W.refresh(); return; }
         res.data.forEach((row) => athletes().set(row.id, row));
         done += chunk.length;
-        $("impMsg").textContent = `นำเข้าแล้ว ${done}/${r.rows.length}`;
+        $("impMsg").textContent = L(`นำเข้าแล้ว ${done}/${r.rows.length}`, `Imported ${done}/${r.rows.length}`);
       }
       $("impGo").disabled = false; $("impText").value = "";
       renderTabs(); renderBoard();
@@ -451,14 +462,19 @@
     const csv = S.toCSV([...athletes().values()], c.event, c.team_size, c.name);
     try {
       await navigator.clipboard.writeText(csv);
-      $("saveStatus").className = "save ok"; $("saveStatus").textContent = "✓ คัดลอก CSV แล้ว — วางใน Google Sheets ได้เลย";
+      $("saveStatus").className = "save ok"; $("saveStatus").textContent = L("✓ คัดลอก CSV แล้ว — วางใน Google Sheets ได้เลย", "✓ CSV copied — paste it into Google Sheets");
       setTimeout(setSave, 4000);
     } catch (err) {
       const box = $("confirmBox"); box.hidden = false;
-      box.innerHTML = `<div class="confirm" style="flex-direction:column;align-items:stretch"><span>คัดลอกอัตโนมัติไม่ได้ — เลือกข้อความแล้วกด Ctrl+C</span><textarea id="csvOut" rows="6" style="font-family:var(--mono);font-size:.8rem;width:100%">${esc(csv)}</textarea><button type="button" id="csvClose">ปิด</button></div>`;
+      box.innerHTML = `<div class="confirm" style="flex-direction:column;align-items:stretch"><span>${L("คัดลอกอัตโนมัติไม่ได้ — เลือกข้อความแล้วกด Ctrl+C", "Could not copy automatically — select the text and press Ctrl+C")}</span><textarea id="csvOut" rows="6" style="font-family:var(--mono);font-size:.8rem;width:100%">${esc(csv)}</textarea><button type="button" id="csvClose">${L("ปิด", "Close")}</button></div>`;
       $("csvOut").select(); $("csvClose").onclick = () => { box.hidden = true; box.innerHTML = ""; };
     }
   };
 
+  I18n.onChange(() => {
+    fillSelects(); paintDenied();
+    if (appRunning) { renderAll(); showNotice(""); }
+  });
+  paintDenied();
   view("loadingView");
 })();
