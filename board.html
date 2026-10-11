@@ -87,7 +87,7 @@
   let live = ["connecting"];
   const paintLive = () => {
     Render.setLive($("liveDot"), $("liveText"), live[0], live[1]);
-    // the LIVE badge already says it; only show the text for connecting / offline / error
+
     if (live[0] === "live") $("liveText").textContent = "";
     $("liveBadge").classList.toggle("off", live[0] !== "live");
   };

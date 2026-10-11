@@ -1,6 +1,3 @@
-// Run: node tests/scoring.test.js
-// Loads the ORIGINAL prototype logic in a vm sandbox and checks js/scoring.js gives identical
-// parsing, stats, individual ranking (incl. tie-breaks) and team results on random data.
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
@@ -28,7 +25,7 @@ function makeAthlete(i, key) {
     const useSer = !useShots && mode !== "none" && rnd(5) > 0;
     if (useShots && rnd(6) > 0) {
       for (let j = 0; j < 10 && k * 10 + j < e.shots; j++) {
-        if (rnd(8) === 0) continue; // leave holes
+        if (rnd(8) === 0) continue; 
         a.shots[k * 10 + j] = e.mode === "int" ? pick(["X", "10", "9", "9", "8", "7", "0"]) : (8 + rnd(28) / 10).toFixed(1);
       }
     }
@@ -41,7 +38,7 @@ function makeAthlete(i, key) {
 let checks = 0;
 for (const key of Object.keys(S.EVENTS)) {
   const mode = S.ev(key).mode;
-  // parsing
+
   for (const raw of ["", "X", "x", "10", "11", "9", "-1", "10.9", "11.0", "8,5", "abc", "89-1x", "89", "89 1x", "102.4", "109.0", "110.0", "5-1x", "100-0x", "101", "99.9-2x"]) {
     assert.strictEqual(JSON.stringify(S.parseShot(raw, mode)), P(`JSON.stringify(parseShot(${JSON.stringify(raw)},${JSON.stringify(mode)}))`), `parseShot ${raw}`);
     assert.strictEqual(JSON.stringify(S.parseSeries(raw, mode)), P(`JSON.stringify(parseSeries(${JSON.stringify(raw)},${JSON.stringify(mode)}))`), `parseSeries ${raw}`);
@@ -70,13 +67,13 @@ for (const key of Object.keys(S.EVENTS)) {
   }
 }
 
-// Hand-checked tie-break cases
+
 {
   const mk = (id, ser) => ({ id, cat: "W", uni: "", name: id, shots: [], ser });
-  // same total, more X wins (integer)
+
   let r = S.ranked([mk("a", ["90-1x"]), mk("b", ["90-3x"])], "W", "ap30");
   assert.deepStrictEqual(r.map((x) => x.a.id), ["b", "a"]);
-  // decimal ignores X; later series wins
+
   r = S.ranked([mk("a", ["100.0", "101.0"]), mk("b", ["101.0", "100.0"])], "W", "ar30");
   assert.deepStrictEqual(r.map((x) => x.a.id), ["a", "b"]);
   assert.strictEqual(S.fmtT(S.stats(mk("a", ["89-1x"]), "ap30").total, "int"), "89");

@@ -304,7 +304,7 @@
       <label class="f" for="fUni">${L("สังกัด / Team", "Team")}<input type="text" id="fUni" data-k="uni" value="${esc(a.uni || "")}"></label>
       <label class="f" for="fCat">${L("ประเภท", "Category")}<select id="fCat" data-k="cat"><option value="W"${(a.cat || "W") === "W" ? " selected" : ""}>${L("หญิง / W", "Women / W")}</option><option value="M"${a.cat === "M" ? " selected" : ""}>${L("ชาย / M", "Men / M")}</option></select></label>
       <label class="f" for="fRelay">${L("ผลัด / Relay", "Relay")}<input type="text" id="fRelay" data-k="relay" value="${esc(a.relay || "")}"></label>
-      <label class="f" for="fLane">${L("เลน / Lane", "Lane")}<input type="text" id="fLane" data-k="lane" value="${esc(a.lane || "")}"></label>
+      <label class="f" for="fLane">${L("ลู่ / Lane", "Lane")}<input type="text" id="fLane" data-k="lane" value="${esc(a.lane || "")}"></label>
     </div>
     <div class="cardtop"><div class="big" id="bigTotal"></div>
       <div class="seg" role="group" aria-label="Entry mode"><button type="button" data-m="series" aria-pressed="${UI.entry === "series"}">${L("รวมชุด", "Series total")}</button><button type="button" data-m="shot" aria-pressed="${UI.entry === "shot"}">${L("ทีละนัด", "Per shot")}</button></div></div>`;
@@ -427,7 +427,7 @@
     const p = $("importPanel");
     p.hidden = !p.hidden; if (p.hidden) return;
     p.innerHTML = `<h2>${L("วางข้อมูลจาก Excel / Google Sheets", "Paste from Excel / Google Sheets")} <small>${L("คัดลอกทั้งตารางแล้ววางด้านล่าง (แถวหัวตารางจะถูกข้ามอัตโนมัติ)", "Copy the whole table and paste below (a header row is skipped automatically)")}</small></h2>
-    <p class="rules">${L("ลำดับคอลัมน์:", "Column order:")} <b>${L("ชื่อ · สังกัด · ประเภท (W/M หรือ หญิง/ชาย) · ผลัด · เลน · S1 · S2 · …", "name · team · category (W/M) · relay · lane · S1 · S2 · …")}</b> — ${L("คอลัมน์ S เว้นว่างได้ ใส่ได้ทั้ง", "S columns may be empty; use")} <code>89-1x</code> ${L("หรือ", "or")} <code>89</code></p>
+    <p class="rules">${L("ลำดับคอลัมน์:", "Column order:")} <b>${L("ชื่อ · สังกัด · ประเภท (W/M หรือ หญิง/ชาย) · ผลัด · ลู่ · S1 · S2 · …", "name · team · category (W/M) · relay · lane · S1 · S2 · …")}</b> — ${L("คอลัมน์ S เว้นว่างได้ ใส่ได้ทั้ง", "S columns may be empty; use")} <code>89-1x</code> ${L("หรือ", "or")} <code>89</code></p>
     <p class="rules"><a href="templates/athlete-import-template.xlsx" download>${L("⬇ ดาวน์โหลดเทมเพลต Excel", "⬇ Download the Excel template")}</a></p>
     <pre>name\tteam\tcat\trelay\tlane\tS1\tS2
 Somying Jaidee\tTU\tW\t1\t3\t89-1x\t87-0x

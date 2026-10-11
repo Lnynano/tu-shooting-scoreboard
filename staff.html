@@ -27,7 +27,7 @@
 
   <p id="loadingView" class="meta"><span class="l-th">กำลังตรวจสอบการเข้าสู่ระบบ…</span><span class="l-en">Checking sign-in…</span></p>
 
-  <!-- login -->
+
   <section class="panel login" id="authView" hidden>
     <h2><span class="l-th">เข้าสู่ระบบ <small>Staff login</small></span><span class="l-en">Staff login</span></h2>
     <form id="loginForm" class="login" style="margin:0">
@@ -38,14 +38,14 @@
     </form>
   </section>
 
-  <!-- signed in but not staff -->
+
   <section class="panel login" id="deniedView" hidden>
     <h2><span class="l-th">ไม่มีสิทธิ์ <small>No access</small></span><span class="l-en">No access</span></h2>
     <div class="notice err" id="deniedMsg"></div>
     <button type="button" id="deniedLogout"><span class="l-th">ออกจากระบบ</span><span class="l-en">Log out</span></button>
   </section>
 
-  <!-- staff app -->
+
   <div id="appView" hidden style="display:flex;flex-direction:column;gap:14px">
     <div class="bar">
       <label class="f" for="compSel">
