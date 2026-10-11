@@ -196,3 +196,9 @@ body.modal-open{overflow:hidden}
 tbody tr.row.click td.name{text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--muted) 50%,transparent);text-underline-offset:3px}
 .sub.updated{margin-top:2px;font-family:var(--mono);font-size:.8rem}
 .sub.updated:empty{display:none}
+/* QR code on the projector board */
+.qrbox{display:flex;align-items:center;gap:10px;color:var(--band-ink)}
+.qrbox .qrimg{width:clamp(76px,9vw,150px);line-height:0;border-radius:6px;overflow:hidden;background:#fff}
+.qrbox .qrimg svg{width:100%;height:auto;display:block}
+.qrbox .qrcap{font-size:clamp(.75rem,1.1vw,1.3rem);font-weight:600;line-height:1.25}
+@media (max-width:700px){.qrbox{display:none}}

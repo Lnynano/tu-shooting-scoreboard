@@ -649,6 +649,7 @@ Somchai Yingtrong\tTU\tM\t1\t4</pre>
   });
 
   /* ---------- printable sheet ---------- */
+  $("qrBtn").onclick = () => { const c = comp(); window.open("qr.html" + (c ? "?c=" + encodeURIComponent(c.id) : ""), "_blank", "noopener"); };
   $("printBtn2").onclick = () => { const c = comp(); if (c) window.open("print.html?c=" + encodeURIComponent(c.id), "_blank", "noopener"); };
 
   /* ---------- CSV ---------- */

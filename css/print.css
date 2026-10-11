@@ -33,3 +33,26 @@ section.sheet thead{display:table-header-group}
   body.print-page{padding:0}
   section.sheet.men-start{break-before:page}
 }
+/* QR block at the end of the printed sheet */
+.qr-foot{display:flex;align-items:center;gap:14px;margin-top:18px;break-inside:avoid}
+.qr-foot .qrimg{width:30mm;height:30mm;line-height:0;flex:none}
+.qr-foot .qrimg svg{width:100%;height:100%;display:block}
+.qr-foot .u{font-family:var(--mono);font-size:8.5pt;color:#333;overflow-wrap:anywhere}
+/* QR poster page (qr.html) */
+.poster{text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px 0 30px}
+.p-org{font-family:var(--display);font-weight:600;letter-spacing:.2em;font-size:14pt}
+.p-title{font-family:var(--display);font-weight:700;font-size:clamp(2rem,6vw,3.4rem);margin:0;text-transform:none;line-height:1.1;color:#000}
+.p-comp{font-size:1.4rem;font-weight:600;color:#c8102e;min-height:1.6em}
+.p-qr{width:min(78vw,520px);line-height:0;border:3px solid #000;border-radius:10px;overflow:hidden;margin:6px 0}
+.p-qr svg{width:100%;height:auto;display:block}
+.p-sub{font-size:1.1rem;max-width:34em}
+.p-url{font-family:var(--mono);font-size:.95rem;color:#333;overflow-wrap:anywhere;max-width:40em}
+label.chk{display:inline-flex;gap:6px;align-items:center;font-size:.85rem;color:#fff}
+@media print{
+  body.poster-page .poster{padding-top:6mm}
+  .p-qr{width:150mm}
+  .p-title{font-size:34pt}
+  .p-comp{font-size:20pt}
+  .p-sub{font-size:14pt}
+}
+.p-title span{color:#000}

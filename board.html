@@ -19,6 +19,10 @@
       <p class="sub" id="subline">ISSF qualification scoring · ผลการแข่งขันสด</p>
       <p class="sub updated" id="updated"></p>
     </div>
+    <div class="qrbox" id="qrBox" hidden>
+      <div class="qrimg" id="qrSvg"></div>
+      <div class="qrcap"><span class="l-th">สแกนดูผล<br>บนมือถือ</span><span class="l-en">Scan for<br>live results</span></div>
+    </div>
     <div class="status">
       <span class="live-badge off" id="liveBadge">LIVE</span>
       <span class="dot" id="liveDot"></span><span id="liveText">…</span>
@@ -45,6 +49,8 @@
 <script src="js/supabase.js"></script>
 <script src="js/scoring.js"></script>
 <script src="js/render.js"></script>
+<script src="js/vendor/qrcode.js"></script>
+<script src="js/qr.js"></script>
 <script>
 (function () {
   const $ = (id) => document.getElementById(id);
@@ -86,6 +92,8 @@
     if (!paused && el >= CYCLE_MS) go(tab + 1);
   }, 200);
 
+  // QR code to the public scoreboard (plain address = always the competition that is currently displayed)
+  try { $("qrSvg").innerHTML = QR.svg(QR.publicUrl(false)); $("qrBox").hidden = false; } catch (e) {}
   let live = ["connecting"];
   const paintLive = () => {
     Render.setLive($("liveDot"), $("liveText"), live[0], live[1]);
