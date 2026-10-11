@@ -139,3 +139,20 @@ html[lang="en"] .l-th{display:none}
 html:not([lang="en"]) .l-en{display:none}
 .hdr-link{font-family:var(--body);font-size:.88rem;color:var(--band-ink);text-decoration:none;border:1px solid color-mix(in srgb,var(--band-ink) 55%,transparent);border-radius:4px;padding:7px 12px;white-space:nowrap}
 .hdr-link:hover{border-color:#fff}
+/* on-screen score keypad */
+.keypad{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--paper);border-top:4px solid var(--accent);padding:6px 10px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -6px 20px rgba(0,0,0,.28)}
+body.has-kp{padding-bottom:300px}
+.kp-head{max-width:520px;margin:0 auto 6px;font-family:var(--mono);font-size:.8rem;color:var(--muted);text-align:center}
+.kp-grid{max-width:520px;margin:0 auto;display:grid;gap:6px;grid-template-columns:repeat(4,1fr)}
+.kp-grid.kp-dec,.kp-grid.kp-ten{grid-template-columns:repeat(4,1fr)}
+button.kp{min-height:52px;font-family:var(--display);font-weight:700;font-size:1.5rem;border-radius:8px;padding:0;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+button.kp:active{background:var(--gold);color:#fff;border-color:var(--gold)}
+button.kp.kp-x{color:var(--accent);border-color:var(--accent)}
+button.kp.kp-w{font-size:1.3rem}
+button.kp.kp-n{background:var(--accent);border-color:var(--accent);color:#fff;font-size:1.2rem}
+#kpBtn{font-size:1.1rem;padding:5px 10px}
+/* narrow screens: let the header controls wrap instead of widening the page */
+.status{flex-wrap:wrap;justify-content:flex-end;max-width:100%}
+#userBox{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+#userEmail{overflow-wrap:anywhere;min-width:0}
+header>div{min-width:0}
