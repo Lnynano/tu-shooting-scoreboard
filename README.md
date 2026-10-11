@@ -25,6 +25,7 @@ Every page has a **Thai / English** switch and a **light / dark** button (rememb
 | `js/render.js`                           | ตารางผลที่ใช้ร่วมกันทุกหน้า + การ์ดรายละเอียดนักกีฬา + เวลาอัปเดต               |
 | `js/staff.js`                            | หน้า staff ทั้งหมด (ล็อกอิน, กรอกคะแนน, แป้นกดบนจอ, ประวัติ, import)            |
 | `js/i18n.js`, `js/theme.js`              | สลับภาษา / สว่าง-มืด                                                           |
+| `js/xlsx.js`                             | สร้างไฟล์ Excel (.xlsx) ในเบราว์เซอร์ ไม่ใช้ไลบรารีภายนอก                       |
 | `css/style.css`, `css/print.css`         | หน้าตา (แดง-ขาว สว่าง / แดง-ดำ มืด) และหน้าพิมพ์                                |
 | `supabase/migrations/*.sql`              | โครงสร้างฐานข้อมูล 001–005 (รันตามลำดับ)                                       |
 | `templates/athlete-import-template.xlsx` | เทมเพลต Excel สำหรับนำเข้ารายชื่อ                                              |
@@ -82,6 +83,7 @@ A signed-in user who is not in `staff` sees “not allowed” and cannot write.
 **พิมพ์ / ส่งออก / Print and export**
 
 - **พิมพ์ผล** → `print.html` แล้วกดพิมพ์ (กระดาษ A4 แนวนอน)
+- **ดาวน์โหลด Excel (.xlsx)** → ไฟล์ Excel จริง (แผ่นข้อมูล, บุคคลหญิง, ทีมหญิง, บุคคลชาย, ทีมชาย) ตัวเลขเป็นตัวเลขจริง เรียง/รวมได้ · มีที่หน้า staff และหน้า `print.html`
 - **คัดลอกผล (วางใน Sheets)** → วางใน Google Sheets/Excel แล้วแยกเป็นคอลัมน์ให้เอง
 - หลังจบรอบ แนะนำให้คัดลอกผลเก็บไว้เป็นไฟล์สำรอง
   Tip: after each round, copy the results into a spreadsheet as a backup.
@@ -106,6 +108,7 @@ npx serve .
 
 ```bash
 node tests/scoring.test.js
+node tests/xlsx.test.js
 ```
 
 เทียบ `js/scoring.js` กับ logic ของ `prototype/issf-scorer.html` (อ่านคะแนน, อันดับ, tie-break, ทีม — ข้อมูลสุ่ม ~9,700 รายการ) และมีเคสทีม/ชื่อสังกัดเพิ่ม

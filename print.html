@@ -20,6 +20,7 @@
     </div>
     <div class="status">
       <a class="hdr-link" href="index.html" id="backLink"><span class="l-th">กลับ</span><span class="l-en">Back</span></a>
+      <button type="button" id="xlsxBtn" disabled><span class="l-th">⬇ Excel</span><span class="l-en">⬇ Excel</span></button>
       <button type="button" id="printBtn" class="primary" disabled><span class="l-th">🖨 พิมพ์</span><span class="l-en">🖨 Print</span></button>
     </div>
   </header>
@@ -32,6 +33,7 @@
 <script src="js/supabase.js"></script>
 <script src="js/scoring.js"></script>
 <script src="js/render.js"></script>
+<script src="js/xlsx.js"></script>
 <script src="js/vendor/qrcode.js"></script>
 <script src="js/qr.js"></script>
 <script>
@@ -70,10 +72,11 @@
     try { const u = QR.publicUrl(!!c); qrHtml = `<div class="qr-foot"><div class="qrimg">${QR.svg(u)}</div><div><b>${L("สแกนดูผลสดบนมือถือ", "Scan for live results")}</b><br><span class="u">${esc(u)}</span></div></div>`; } catch (e) {}
     html += qrHtml + `<div class="signs"><div><span></span>${L("ผู้บันทึกคะแนน / Scorer", "Scorer")}</div><div><span></span>${L("ประธานกรรมการ / Chief judge", "Chief judge")}</div></div>`;
     box.innerHTML = html;
-    $("printBtn").disabled = !sections;
+    $("printBtn").disabled = !sections; $("xlsxBtn").disabled = !sections;
     if (auto && !autoDone && sections) { autoDone = true; setTimeout(() => window.print(), 400); }
   }
   $("printBtn").onclick = () => window.print();
+  $("xlsxBtn").onclick = () => { if (state && state.comp) Xlsx.download(state.comp, state.list(), { L }); };
   TU.watch({ id: c, onChange: (s) => { state = s; draw(); }, onStatus: () => {} });
   I18n.onChange(draw);
   draw();
