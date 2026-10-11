@@ -17,6 +17,7 @@
     <div>
       <h1>TU Shooting <span>Scoreboard</span></h1>
       <p class="sub" id="subline">ISSF qualification scoring · ผลการแข่งขันสด</p>
+      <p class="sub updated" id="updated"></p>
     </div>
     <div class="status">
       <span class="live-badge off" id="liveBadge">LIVE</span>
@@ -55,6 +56,7 @@
     document.title = (comp ? comp.name + " · " : "") + "TU Shooting Board";
     $("subline").textContent = Render.subline(comp);
     const list = state ? state.list() : [];
+    $("updated").textContent = comp ? Render.updatedText(list) : "";
     $("tabs").innerHTML = Render.tabsHTML(tab, list);
     Render.paint(
       { title: $("boardTitle"), info: $("evInfo"), thead: $("thead"), tbody: $("tbody") },
