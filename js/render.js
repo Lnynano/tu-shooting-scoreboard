@@ -19,12 +19,26 @@
 
   const noActiveHTML = () => `<tr><td colspan="20" class="empty">${L("ยังไม่มีการแข่งขันที่เปิดแสดงอยู่", "No active competition")}</td></tr>`;
 
-  /* opts: {athletes[], event, teamSize, tab, selectedId, clickable, loading, emptyHint}
+  // Filtering happens AFTER ranking, so a filtered list still shows each athlete's real rank.
+  const norm = (s) => String(s || "").normalize("NFC").toLowerCase().trim();
+  const hasFilter = (f) => !!(f && (norm(f.q) || f.relay));
+  function matchAth(a, f) {
+    if (f.relay && String(a.relay || "") !== f.relay) return false;
+    const q = norm(f.q);
+    return !q || norm(a.name).includes(q) || norm(a.uni).includes(q);
+  }
+  function matchTeam(t, f) {
+    const q = norm(f.q), uniOk = !q || norm(t.uni).includes(q);
+    return t.mem.some((r) => matchAth(r.a, { relay: f.relay, q: uniOk ? "" : f.q }));
+  }
+
+  /* opts: {athletes[], event, teamSize, tab, selectedId, clickable, loading, emptyHint, filter:{q,relay}}
      returns {title, info, thead, tbody} (HTML strings) */
   function boardHTML(opts) {
     const { athletes, event, teamSize, tab } = opts;
     const e = S.ev(event), n = S.nSer(event), [cat, kind, th, en] = S.TABS[tab];
-    const cols = n + 7;
+    const cols = n + 7, f = hasFilter(opts.filter) ? opts.filter : null;
+    let count = { shown: 0, total: 0 };
     let thead = `<tr><th class="l">#</th><th class="l">${L("ผลัด<small>Relay</small>", "Relay")}</th><th class="l">${L("ลู่<small>Lane</small>", "Lane")}</th><th class="l">${L("สังกัด<small>Univ.</small>", "Team")}</th><th class="l">${L("ชื่อ<small>Name</small>", "Name")}</th>`;
     for (let i = 1; i <= n; i++) thead += `<th>S${i}</th>`;
     thead += `<th>${L("รวม<small>Total</small>", "Total")}</th>${kind === "team" ? `<th>${L("ทีม<small>Team</small>", "Team")}</th>` : `<th>${L("นัด<small>Shots</small>", "Shots")}</th>`}</tr>`;
@@ -40,12 +54,14 @@
     if (opts.loading) {
       tbody = `<tr><td colspan="${cols}" class="empty">${L("กำลังโหลดผลการแข่งขัน…", "Loading results…")}</td></tr>`;
     } else if (kind === "ind") {
-      const list = S.ranked(athletes, cat, event);
+      const all = S.ranked(athletes, cat, event), list = f ? all.filter((r) => matchAth(r.a, f)) : all;
+      count = { shown: list.length, total: all.length };
       tbody = list.length
         ? list.map((r) => row(r, r.st.any ? r.rank : "–", `<td>${r.st.count}/${e.shots}</td>`)).join("")
-        : `<tr><td colspan="${cols}" class="empty">${L("ยังไม่มีนักกีฬาในประเภทนี้", "No athletes in this category yet")}${opts.emptyHint ? "<br>" + opts.emptyHint : ""}</td></tr>`;
+        : `<tr><td colspan="${cols}" class="empty">${f && all.length ? L("ไม่พบนักกีฬาที่ตรงกับตัวกรอง", "No athletes match the filter") : L("ยังไม่มีนักกีฬาในประเภทนี้", "No athletes in this category yet")}${!f && opts.emptyHint ? "<br>" + opts.emptyHint : ""}</td></tr>`;
     } else {
-      const ts = S.teams(athletes, cat, event, teamSize);
+      const allT = S.teams(athletes, cat, event, teamSize), ts = f ? allT.filter((t) => matchTeam(t, f)) : allT;
+      count = { shown: ts.length, total: allT.length };
       tbody = ts.length
         ? ts.map((t) => t.mem.map((r, i) => {
             const inTeam = t.counted.includes(r);
@@ -54,13 +70,13 @@
               : "<td></td>";
             return row(r, i === 0 ? (t.total ? t.rank : "–") : "", tt, (i === 0 ? "teamstart " : "") + (inTeam || !r.st.any ? "" : "out"));
           }).join("")).join("")
-        : `<tr><td colspan="${cols}" class="empty">${L("ยังไม่มีทีม — ระบุสังกัดให้นักกีฬา ระบบจะรวมทีมให้อัตโนมัติ", "No teams yet — give athletes a team/university and teams are formed automatically")}</td></tr>`;
+        : `<tr><td colspan="${cols}" class="empty">${f && allT.length ? L("ไม่พบทีมที่ตรงกับตัวกรอง", "No teams match the filter") : L("ยังไม่มีทีม — ระบุสังกัดให้นักกีฬา ระบบจะรวมทีมให้อัตโนมัติ", "No teams yet — give athletes a team/university and teams are formed automatically")}</td></tr>`;
     }
     const size = teamSize || 3;
     return {
       title: L(`${th} / ${en}`, en),
       info: `${evName(event)} · ${e.mode === "dec" ? L("ทศนิยม", "decimal") : L("เต็มหน่วย + X", "integer + X")}${kind === "team" ? L(` · นับ ${size} คนที่ดีที่สุด`, ` · best ${size} count`) : ""}`,
-      thead, tbody
+      thead, tbody, count
     };
   }
 
@@ -71,6 +87,7 @@
     if (els.info) els.info.textContent = h.info;
     els.thead.innerHTML = h.thead;
     els.tbody.innerHTML = h.tbody;
+    return h;
   }
 
   function setLive(dotEl, textEl, status, msg) {
