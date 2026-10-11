@@ -17,7 +17,8 @@
     const paint = () => {
       const d = isDark();
       const L = window.I18n ? window.I18n.L : (th) => th;
-      b.textContent = d ? L("☀ สว่าง", "☀ Light") : L("☾ มืด", "☾ Dark");
+      b.textContent = d ? "☀" : "☾";
+      b.title = d ? L("โหมดสว่าง", "Light mode") : L("โหมดมืด", "Dark mode");
       b.setAttribute("aria-label", d ? L("สลับเป็นโหมดสว่าง (Light mode)", "Switch to light mode") : L("สลับเป็นโหมดมืด (Dark mode)", "Switch to dark mode"));
     };
     b.onclick = () => {
