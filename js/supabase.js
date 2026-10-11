@@ -9,8 +9,9 @@
   /* Watch one competition (by id, or the active one when id is null) and its athletes.
      onChange(state): state = {comp, athletes: Map, list(): sorted array, loaded}
      onStatus(status, message): status = connecting | live | offline | error
-     skip(id): return true to ignore realtime updates for that athlete (unsaved local edits). */
-  function watch({ id = null, onChange, onStatus, skip }) {
+     transform(row): optional; called on every athlete row from the server (e.g. to overlay unsaved local edits). */
+  function watch({ id = null, onChange, onStatus, transform }) {
+    const tf = (r) => (transform ? transform(r) : r);
     const S = {
       comp: null, athletes: new Map(), loaded: false,
       list() { return [...S.athletes.values()].sort(byName); }
@@ -44,7 +45,7 @@
       const { data, error } = await sb.from("athletes").select("*").eq("competition_id", S.comp.id);
       if (error) throw error;
       const next = new Map();
-      for (const r of data) next.set(r.id, skip && skip(r.id) && S.athletes.has(r.id) ? S.athletes.get(r.id) : r);
+      for (const r of data) next.set(r.id, tf(r));
       S.athletes = next;
     }
 
@@ -57,7 +58,7 @@
       chA = sb.channel("ath-" + cid + "-" + Math.random().toString(36).slice(2, 7))
         .on("postgres_changes", { event: "*", schema: "public", table: "athletes", filter: "competition_id=eq." + cid }, (p) => {
           if (p.eventType === "DELETE") S.athletes.delete(p.old.id);
-          else if (!(skip && skip(p.new.id))) S.athletes.set(p.new.id, p.new);
+          else S.athletes.set(p.new.id, tf(p.new));
           emit();
         })
         .subscribe((s) => { stA = s; recompute(); if (s === "SUBSCRIBED" && S.loaded) refresh(); });

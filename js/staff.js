@@ -10,7 +10,10 @@
   const saveUI = () => { try { localStorage.setItem(UKEY, JSON.stringify(UI)); } catch (e) {} };
 
   let comps = [], W = null, userId = null, appRunning = false;
-  const dirty = new Set(), ver = new Map(), timers = new Map(), chains = new Map();
+  // Edits are sent as small patches (only what changed) so two staff never overwrite each other's entries.
+  // pending: not yet sent; sending: currently in flight. Both are {fields:{}, shots:{idx:v}, ser:{idx:v}} per athlete id.
+  const pending = new Map(), sending = new Map(), timers = new Map(), chains = new Map();
+  const dirtyCount = () => new Set([...pending.keys(), ...sending.keys()]).size;
   let inflight = 0, lastOk = 0, errMsg = "";
 
   /* ---------- helpers ---------- */
@@ -46,13 +49,13 @@
       el.textContent = L("✕ บันทึกไม่สำเร็จ: ", "✕ Save failed: ") + errMsg;
     } else if (inflight) {
       el.textContent = L("กำลังบันทึก…", "Saving…");
-    } else if (dirty.size) {
+    } else if (dirtyCount()) {
       el.textContent = L("รอบันทึก…", "Pending…");
     } else if (lastOk) {
       el.classList.add("ok");
       el.textContent = L("✓ บันทึกแล้ว ", "✓ Saved ") + new Date(lastOk).toLocaleTimeString(L("th-TH", "en-GB"));
     } else el.textContent = "";
-    $("retryBtn").hidden = !(errMsg && dirty.size);
+    $("retryBtn").hidden = !(errMsg && dirtyCount());
   }
   // Wrap one write. Supabase returns {error}; RLS-denied updates return no error but no rows.
   async function run(fn) {
@@ -67,15 +70,28 @@
       return null;
     } finally { inflight--; setSave(); }
   }
-  window.addEventListener("beforeunload", (e) => { if (dirty.size || inflight) { e.preventDefault(); e.returnValue = ""; } });
+  window.addEventListener("beforeunload", (e) => { if (dirtyCount() || inflight) { e.preventDefault(); e.returnValue = ""; } });
 
-  /* ---------- athlete saves (debounced per athlete) ---------- */
-  const fill = (arr) => { const src = arr || [], out = Array.from({ length: src.length }, (_, i) => src[i] || ""); while (out.length && out[out.length - 1] === "") out.pop(); return out; };
-  const payload = (a) => ({ name: a.name, uni: a.uni || "", cat: a.cat || "W", relay: a.relay || "", lane: a.lane || "", shots: fill(a.shots), ser: fill(a.ser) });
+  /* ---------- athlete saves (debounced per athlete, patch-based) ---------- */
+  const emptyPatch = () => ({ fields: {}, shots: {}, ser: {} });
+  const mergePatch = (base, add) => ({
+    fields: { ...base.fields, ...add.fields }, shots: { ...base.shots, ...add.shots }, ser: { ...base.ser, ...add.ser }
+  });
+  // Put not-yet-confirmed local edits on top of a row from the server (used for realtime updates and save results).
+  function overlay(row) {
+    const o = { ...row, shots: Array.from(row.shots || [], (v) => v || ""), ser: Array.from(row.ser || [], (v) => v || "") };
+    for (const patch of [sending.get(row.id), pending.get(row.id)]) {
+      if (!patch) continue;
+      Object.assign(o, patch.fields);
+      for (const [i, v] of Object.entries(patch.shots)) { while (o.shots.length <= +i) o.shots.push(""); o.shots[+i] = v; }
+      for (const [k, v] of Object.entries(patch.ser)) { while (o.ser.length <= +k) o.ser.push(""); o.ser[+k] = v; }
+    }
+    return o;
+  }
 
-  function queueSave(id, delay = 400) {
-    dirty.add(id);
-    ver.set(id, (ver.get(id) || 0) + 1);
+  // part: {fields:{k:v}} | {shots:{i:v}} | {ser:{k:v}}
+  function queueSave(id, part, delay = 400) {
+    pending.set(id, mergePatch(pending.get(id) || emptyPatch(), { ...emptyPatch(), ...part }));
     clearTimeout(timers.get(id));
     timers.set(id, setTimeout(() => flush(id), delay));
     setSave();
@@ -84,17 +100,22 @@
     clearTimeout(timers.get(id));
     const prev = chains.get(id) || Promise.resolve();
     const p = prev.then(async () => {
-      const a = athletes().get(id);
-      if (!a) { dirty.delete(id); return; }
-      const v = ver.get(id);
-      const res = await run(() => sb.from("athletes").update(payload(a)).eq("id", id).select("id"));
-      if (res && !res.data.length) { errMsg = L("ไม่พบแถวหรือไม่มีสิทธิ์แก้ไข (RLS)", "Row not found or no permission (RLS)"); setSave(); return; }
-      if (res && ver.get(id) === v) dirty.delete(id);
+      const patch = pending.get(id);
+      if (!patch) return;
+      pending.delete(id); sending.set(id, patch);
+      const res = await run(() => sb.rpc("patch_athlete", { aid: id, fields: patch.fields, shot_patch: patch.shots, ser_patch: patch.ser }));
+      sending.delete(id);
+      if (!res) {
+        if (/not found/i.test(errMsg)) { errMsg = L("นักกีฬานี้ถูกลบไปแล้วหรือไม่มีสิทธิ์แก้ไข", "This athlete was deleted or you have no permission"); return; }
+        pending.set(id, mergePatch(patch, pending.get(id) || emptyPatch())); // keep for retry; newer edits win
+        return;
+      }
+      if (res.data && athletes().has(id)) athletes().set(id, overlay(res.data)); // also picks up other staff's edits
     }).finally(() => { if (chains.get(id) === p) chains.delete(id); setSave(); });
     chains.set(id, p);
     return p;
   }
-  const flushAll = () => Promise.all([...dirty].map(flush));
+  const flushAll = () => Promise.all([...pending.keys()].map(flush));
   $("retryBtn").onclick = () => { errMsg = ""; flushAll(); };
 
   /* ---------- auth ---------- */
@@ -157,14 +178,14 @@
     appRunning = false;
     clearInterval(compPoll);
     if (W) { W.stop(); W = null; }
-    comps = []; dirty.clear(); UI.sel = null;
+    comps = []; pending.clear(); sending.clear(); UI.sel = null;
   }
   function selectComp(id) {
     if (W) W.stop();
     UI.comp = id; UI.sel = null; saveUI();
     W = TU.watch({
       id,
-      skip: (aid) => dirty.has(aid),
+      transform: overlay,
       onChange: onData,
       onStatus: (s, m) => Render.setLive($("liveDot"), $("liveText"), s, m)
     });
@@ -228,7 +249,7 @@
       const res = await run(() => sb.from("competitions").delete().eq("id", c.id).select("id"));
       if (res && !res.data.length) { errMsg = L("ลบไม่สำเร็จ (ไม่พบแถวหรือไม่มีสิทธิ์)", "Delete failed (row not found or no permission)"); setSave(); return; }
       if (!res) return;
-      for (const id of [...dirty]) { clearTimeout(timers.get(id)); dirty.delete(id); }
+      for (const id of [...pending.keys()]) { clearTimeout(timers.get(id)); pending.delete(id); }
       if (W) { W.stop(); W = null; }
       await loadComps();
       const next = comps.find((x) => x.is_active) || comps[0];
@@ -261,7 +282,7 @@
     const apply = async () => {
       await patchComp({ event: nk });
       if (!same && has) {
-        for (const a of athletes().values()) { a.shots = []; a.ser = []; }
+        for (const a of athletes().values()) { a.shots = []; a.ser = []; } pending.clear();
         await run(() => sb.from("athletes").update({ shots: [], ser: [] }).eq("competition_id", c.id));
       }
       renderAll();
@@ -334,7 +355,7 @@
       : (e.mode === "int" ? L("พิมพ์ 0–10 หรือ X ทีละนัด ระบบเลื่อนช่องให้อัตโนมัติ · Backspace ในช่องว่างเพื่อย้อนกลับ", "Type 0–10 or X per shot; focus advances automatically · Backspace in an empty box goes back") : L("พิมพ์ 0.0–10.9 ทีละนัด ระบบเลื่อนช่องให้อัตโนมัติ · Backspace ในช่องว่างเพื่อย้อนกลับ", "Type 0.0–10.9 per shot; focus advances automatically · Backspace in an empty box goes back"));
     $("delBtn").onclick = () => confirmUI($("cardConfirm"), L(`ลบ “${esc(a.name)}” และคะแนนทั้งหมด?`, `Delete “${esc(a.name)}” and all scores?`), L("ลบ", "Delete"), async () => {
       const id = UI.sel; UI.sel = null; saveUI();
-      clearTimeout(timers.get(id)); dirty.delete(id);
+      clearTimeout(timers.get(id)); pending.delete(id); sending.delete(id);
       athletes().delete(id);
       renderAll();
       const res = await run(() => sb.from("athletes").delete().eq("id", id).select("id"));
@@ -360,7 +381,7 @@
     inp.classList.toggle("x", !!(p && p.x));
     a.shots = a.shots || [];
     const nv = p ? p.norm : "";
-    if ((a.shots[i] || "") !== nv) { a.shots[i] = nv; queueSave(UI.sel); }
+    if ((a.shots[i] || "") !== nv) { a.shots[i] = nv; queueSave(UI.sel, { shots: { [i]: nv } }); }
     refreshLive(); return true;
   }
   function commitSer(inp) {
@@ -371,7 +392,7 @@
     if (p && p.norm !== inp.value) inp.value = p.norm;
     a.ser = a.ser || [];
     const nv = p ? p.norm : "";
-    if ((a.ser[k] || "") !== nv) { a.ser[k] = nv; queueSave(UI.sel); }
+    if ((a.ser[k] || "") !== nv) { a.ser[k] = nv; queueSave(UI.sel, { ser: { [k]: nv } }); }
     refreshLive(); return true;
   }
   card.addEventListener("input", (x) => {
@@ -379,7 +400,7 @@
     if (t.dataset.k) {
       if (t.dataset.k === "name" && !t.value.trim()) { t.setAttribute("aria-invalid", "true"); return; }
       t.removeAttribute("aria-invalid");
-      a[t.dataset.k] = t.value; queueSave(UI.sel); renderTabs(); renderBoard(); return;
+      a[t.dataset.k] = t.value; queueSave(UI.sel, { fields: { [t.dataset.k]: t.value } }); renderTabs(); renderBoard(); return;
     }
     if (t.dataset.i) {
       const v = t.value.trim();
@@ -389,7 +410,7 @@
   });
   card.addEventListener("change", (x) => {
     const t = x.target;
-    if (t.dataset.k === "cat") { athletes().get(UI.sel).cat = t.value; queueSave(UI.sel, 0); renderTabs(); renderBoard(); }
+    if (t.dataset.k === "cat") { athletes().get(UI.sel).cat = t.value; queueSave(UI.sel, { fields: { cat: t.value } }, 0); renderTabs(); renderBoard(); }
   });
   card.addEventListener("keydown", (k) => {
     const t = k.target;
