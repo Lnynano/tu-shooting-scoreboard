@@ -137,3 +137,5 @@ body.board td.rank,body.board td.tt{font-size:clamp(1.3rem,2vw,2.6rem)}
 .lang-btn{white-space:nowrap;font-weight:600}
 html[lang="en"] .l-th{display:none}
 html:not([lang="en"]) .l-en{display:none}
+.hdr-link{font-family:var(--body);font-size:.88rem;color:var(--band-ink);text-decoration:none;border:1px solid color-mix(in srgb,var(--band-ink) 55%,transparent);border-radius:4px;padding:7px 12px;white-space:nowrap}
+.hdr-link:hover{border-color:#fff}
