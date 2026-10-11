@@ -166,3 +166,7 @@ header>div{min-width:0}
 .tag.del{color:var(--accent)}
 label.chk{display:inline-flex;gap:6px;align-items:center;font-size:.85rem}
 @media (max-width:620px){.hrow{grid-template-columns:1fr auto}.hmeta{grid-column:1/-1}}
+/* public search + relay filter */
+.filters{align-items:flex-end}
+.filters .grow{flex:1 1 220px}
+.filters input[type=search]{width:100%;font:inherit;font-size:.95rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:7px 10px}
