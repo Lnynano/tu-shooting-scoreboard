@@ -7,7 +7,7 @@ Live ISSF shooting scoreboard for TU Shooting Club — static site (GitHub Pages
 |---|---|---|
 | `index.html` | ทุกคน (ไม่ต้องล็อกอิน) | ตารางผลสด 4 แท็บ, อ่านอย่างเดียว · `?c=<competition id>` เลือกรายการ |
 | `board.html` | จอโปรเจกเตอร์ | ตัวใหญ่, สลับแท็บทุก 15 วินาที (`?every=20` เปลี่ยนเวลา), Space = หยุด/เล่นต่อ, ←/→ เปลี่ยนแท็บ |
-| `staff.html` | เจ้าหน้าที่ | ล็อกอิน, สร้าง/ตั้งค่าการแข่งขัน, เพิ่มนักกีฬา, กรอกคะแนน, วางจาก Excel, คัดลอก CSV |
+| `staff.html` | เจ้าหน้าที่ | ล็อกอิน, สร้าง/ตั้งค่าการแข่งขัน, เพิ่มนักกีฬา, กรอกคะแนน, วางจาก Excel, คัดลอกผลไปวางใน Sheets/Excel |
 
 โครงสร้าง / Layout: `js/config.js` (URL + publishable key) · `js/supabase.js` (client + realtime) · `js/scoring.js` (logic ล้วน ไม่มี DOM) · `js/render.js` (ตารางที่ใช้ร่วมกัน) · `js/staff.js` · `css/style.css` · `supabase/migrations/*.sql` · `tests/scoring.test.js` · `prototype/` (ต้นแบบเดิม)
 

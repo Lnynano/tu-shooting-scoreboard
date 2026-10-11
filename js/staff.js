@@ -459,10 +459,10 @@ Somchai Yingtrong\tTU\tM\t1\t4</pre>
   /* ---------- CSV ---------- */
   $("copyBtn").onclick = async () => {
     const c = comp(); if (!c) return;
-    const csv = S.toCSV([...athletes().values()], c.event, c.team_size, c.name);
+    const csv = S.toTSV([...athletes().values()], c.event, c.team_size, c.name);
     try {
       await navigator.clipboard.writeText(csv);
-      $("saveStatus").className = "save ok"; $("saveStatus").textContent = L("✓ คัดลอก CSV แล้ว — วางใน Google Sheets ได้เลย", "✓ CSV copied — paste it into Google Sheets");
+      $("saveStatus").className = "save ok"; $("saveStatus").textContent = L("✓ คัดลอกผลแล้ว — วางใน Google Sheets / Excel ได้เลย", "✓ Results copied — paste into Google Sheets / Excel");
       setTimeout(setSave, 4000);
     } catch (err) {
       const box = $("confirmBox"); box.hidden = false;
