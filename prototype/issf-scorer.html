@@ -1,0 +1,565 @@
+<title>TU Shooting Scoreboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: range-office scorebook — toolbar, category tabs, live results board; score card beside it for scorers; board-only mode for the projector */
+:root{
+  --bg:#eef0ec; --paper:#fbfcfa; --ink:#161a1d; --muted:#5d6560; --line:#d4d9d3;
+  --accent:#b3122a; --accent-soft:#f5dfe2; --ok:#1f6b45; --warn:#b06a00; --focus:#1d4ed8;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --body:"IBM Plex Sans Thai",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121514; --paper:#1a1e1c; --ink:#e8ece9; --muted:#9aa49e; --line:#2e3532;
+  --accent:#ef5a6f; --accent-soft:#3a1c22; --ok:#5cc28d; --warn:#e5a33b; --focus:#7aa2ff; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121514; --paper:#1a1e1c; --ink:#e8ece9; --muted:#9aa49e; --line:#2e3532;
+  --accent:#ef5a6f; --accent-soft:#3a1c22; --ok:#5cc28d; --warn:#e5a33b; --focus:#7aa2ff; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:20px 40px}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:2.4rem;line-height:1;margin:0;letter-spacing:.01em;text-transform:uppercase;text-wrap:balance}
+h1 span{color:var(--accent)}
+.sub{color:var(--muted);margin:4px 0 0;font-size:.9rem}
+.status{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.dot.live{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent)}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+label.f{display:flex;flex-direction:column;gap:2px;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+select,input[type=text],textarea{font:inherit;font-size:.95rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:6px 8px;min-width:0}
+button{font:inherit;font-size:.88rem;cursor:pointer;border-radius:4px;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:7px 12px}
+button:hover{border-color:var(--ink)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.ghost{background:transparent}
+button[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.spacer{flex:1}
+.meta{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tabs button{font-family:var(--display);font-weight:600;font-size:1.05rem;letter-spacing:.03em;text-transform:uppercase;padding:6px 14px}
+.tabs button .c{font-family:var(--mono);font-size:.75rem;opacity:.7;margin-left:6px}
+main{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:start}
+body.board main{grid-template-columns:1fr}
+body.board #editor{display:none}
+@media (max-width:980px){main{grid-template-columns:1fr}}
+section.panel{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:14px;min-width:0}
+h2{font-family:var(--display);font-weight:600;font-size:1.35rem;text-transform:uppercase;letter-spacing:.03em;margin:0 0 10px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
+h2 small{font-family:var(--body);font-size:.8rem;text-transform:none;letter-spacing:0;color:var(--muted);font-weight:400}
+.tablebox{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500;text-align:right;padding:6px;border-bottom:1px solid var(--line);white-space:nowrap}
+th.l,td.l{text-align:left}
+td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right;font-family:var(--mono);font-size:.86rem;white-space:nowrap}
+td.name{font-family:var(--body);font-size:.95rem;text-align:left;white-space:normal;min-width:130px}
+td.uni{font-family:var(--body);text-align:left}
+tbody tr.row{cursor:pointer}
+tbody tr.row:hover{background:var(--bg)}
+tbody tr.sel{background:var(--accent-soft)}
+td.rank{font-family:var(--display);font-weight:700;font-size:1.25rem;text-align:left;width:2.2em}
+td.total{font-weight:600;font-size:1rem}
+td.total .x,td.tt .x{color:var(--accent);font-size:.85em;margin-left:4px}
+td.ser{color:var(--muted)}
+td.ser .x{color:var(--accent)}
+tr.out td{opacity:.5}
+tr.teamstart td{border-top:2px solid var(--ink)}
+td.tt{font-family:var(--display);font-weight:700;font-size:1.25rem;color:var(--accent)}
+body.board td{font-size:1rem;padding:10px 8px}
+body.board td.name{font-size:1.1rem}
+body.board td.total{font-size:1.2rem}
+.pill{display:inline-block;font-family:var(--body);font-size:.7rem;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--muted);margin-left:4px;vertical-align:middle}
+.pill.done{border-color:var(--ok);color:var(--ok)}
+.pill.ex{border-color:var(--warn);color:var(--warn)}
+.empty{color:var(--muted);padding:22px 4px;line-height:1.7;white-space:normal;text-align:left;font-family:var(--body)}
+.add{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.add input{flex:1 1 130px}
+/* score card */
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px}
+.fields label.f input,.fields label.f select{width:100%}
+.big{font-family:var(--display);font-weight:700;font-size:2.6rem;line-height:1;font-variant-numeric:tabular-nums}
+.big small{font-size:1rem;color:var(--muted);font-weight:500;margin-left:6px}
+.big .x{color:var(--accent);font-size:1.4rem;margin-left:6px}
+.cardtop{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{border:0;border-radius:0}
+.series{display:grid;grid-template-columns:2.4em minmax(0,1fr) 4.6em;gap:8px;align-items:center;padding:6px 0;border-top:1px dashed var(--line)}
+.series .lab{font-family:var(--display);font-weight:600;font-size:1.05rem;color:var(--muted)}
+.series .st{font-family:var(--mono);font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.shots{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px}
+@media (max-width:520px){.shots{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.shots input,.serin{width:100%;min-width:0;text-align:center;font-family:var(--mono);font-size:.9rem;padding:6px 0;border-radius:3px}
+.serin{font-size:1rem;text-align:left;padding:6px 10px}
+.shots input.x{border-color:var(--accent);color:var(--accent);font-weight:600}
+input[aria-invalid=true]{background:var(--accent-soft)!important;border-color:var(--accent)!important}
+.locked{font-size:.8rem;color:var(--muted)}
+.hint{font-size:.8rem;color:var(--muted);margin:10px 0 0}
+.rowbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+.confirm{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--accent-soft);border:1px solid var(--accent);border-radius:4px;padding:8px 10px;font-size:.88rem}
+.notice{background:var(--paper);border:1px dashed var(--warn);color:var(--ink);border-radius:4px;padding:8px 12px;font-size:.85rem}
+.import textarea{width:100%;font-family:var(--mono);font-size:.82rem}
+.import pre{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:8px;font-family:var(--mono);font-size:.78rem;overflow-x:auto;margin:6px 0}
+.rules{font-size:.8rem;color:var(--muted);line-height:1.7}
+.rules b{color:var(--ink);font-weight:500}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>TU Shooting <span>Scoreboard</span></h1>
+      <p class="sub" id="subline">ISSF qualification scoring · ผลการแข่งขันสด</p>
+    </div>
+    <div class="status"><span class="dot" id="liveDot"></span><span id="liveText">กำลังเชื่อมต่อ…</span></div>
+  </header>
+
+  <div class="bar" id="toolbar">
+    <label class="f" for="event">รายการ / Event
+      <select id="event"></select>
+    </label>
+    <label class="f" for="matchName">การแข่งขัน / Match
+      <input type="text" id="matchName" placeholder="เช่น TU Open 2026">
+    </label>
+    <label class="f" for="teamSize">นับทีม / Team counts
+      <select id="teamSize"><option value="2">ดีที่สุด 2 คน</option><option value="3">ดีที่สุด 3 คน</option><option value="4">ดีที่สุด 4 คน</option></select>
+    </label>
+    <span class="spacer"></span>
+    <button id="boardBtn" type="button" aria-pressed="false">โหมดจอใหญ่</button>
+    <button id="importBtn" type="button">วางจาก Excel</button>
+    <button id="copyBtn" type="button">คัดลอกผล (CSV)</button>
+    <button id="resetBtn" type="button" class="ghost">ล้างทั้งหมด</button>
+  </div>
+  <div id="notice" hidden></div>
+  <div id="confirmBox" hidden></div>
+  <section class="panel import" id="importPanel" hidden></section>
+
+  <nav class="tabs" id="tabs" aria-label="Categories"></nav>
+
+  <main>
+    <section class="panel" aria-labelledby="resH">
+      <h2 id="resH"><span id="boardTitle">ผลการแข่งขัน</span> <small id="evInfo"></small></h2>
+      <div class="tablebox"><table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table></div>
+      <form class="add" id="addForm">
+        <input type="text" id="newName" placeholder="ชื่อนักกีฬา / Name" aria-label="Athlete name" required>
+        <input type="text" id="newUni" placeholder="มหาวิทยาลัย / ทีม" aria-label="University or team">
+        <button class="primary" type="submit">+ เพิ่มนักกีฬา</button>
+      </form>
+    </section>
+
+    <section class="panel" id="editor" aria-labelledby="cardH">
+      <h2 id="cardH">ใบบันทึกคะแนน / Score card</h2>
+      <div id="card"></div>
+      <p class="hint" id="hint"></p>
+    </section>
+  </main>
+
+  <section class="panel rules">
+    <b>Tie-break:</b> คะแนนเต็มหน่วย (pistol / 3P) — รวม → inner 10 (X) → ชุดสุดท้ายย้อนหลัง → นัดย้อนหลัง · คะแนนทศนิยม (air rifle) — รวม → ชุดสุดท้ายย้อนหลัง → นัดย้อนหลัง.
+    <b>ทีม:</b> รวมคะแนนสมาชิกที่ดีที่สุดตามจำนวนที่ตั้งไว้ จัดอันดับด้วยรวม → X.
+    <b>กรอกแบบรวมชุด:</b> พิมพ์ <code>89-1x</code> (89 คะแนน, 1 X) หรือ <code>89</code> · ปืนยาวทศนิยมพิมพ์ <code>102.4</code>.
+  </section>
+</div>
+
+<script>
+const EVENTS={
+  ap60:{name:"10m Air Pistol — 60 นัด",shots:60,mode:"int"},
+  ar60:{name:"10m Air Rifle — 60 นัด",shots:60,mode:"dec"},
+  ap40:{name:"10m Air Pistol — 40 นัด",shots:40,mode:"int"},
+  ar40:{name:"10m Air Rifle — 40 นัด",shots:40,mode:"dec"},
+  ap30:{name:"10m Air Pistol — 30 นัด (ซ้อม)",shots:30,mode:"int"},
+  ar30:{name:"10m Air Rifle — 30 นัด (ซ้อม)",shots:30,mode:"dec"},
+  r3p60:{name:"50m Rifle 3 Positions — 60 นัด",shots:60,mode:"int"},
+  p25:{name:"25m Pistol — 60 นัด",shots:60,mode:"int"}
+};
+const TABS=[["W","ind","บุคคลหญิง","Women"],["W","team","ทีมหญิง","Women team"],["M","ind","บุคคลชาย","Men"],["M","team","ทีมชาย","Men team"]];
+const LKEY="tu-issf-scoreboard-v2", UKEY="tu-issf-ui-v2";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const rid=()=>Math.random().toString(36).slice(2,10);
+
+/* ---------- state ---------- */
+let META={event:"ap60",match:"",teamSize:3};
+const A=new Map();             // id -> athlete
+let backend="local", db=null, canWrite=true;
+let UI={tab:0,sel:null,entry:"series",board:false};
+try{Object.assign(UI,JSON.parse(localStorage.getItem(UKEY))||{})}catch(e){}
+const saveUI=()=>{try{localStorage.setItem(UKEY,JSON.stringify(UI))}catch(e){}};
+const ev=()=>EVENTS[META.event]||EVENTS.ap60;
+const nSer=()=>Math.ceil(ev().shots/10);
+
+/* ---------- parsing ---------- */
+function parseShot(raw,mode){
+  const v=(raw||"").trim(); if(v==="")return null;
+  if(mode==="int"){
+    if(/^[xX]$/.test(v))return{t:100,x:true,norm:"X"};
+    if(/^(10|[0-9])$/.test(v))return{t:+v*10,x:false,norm:String(+v)};
+    return false;
+  }
+  const m=v.replace(",",".");
+  if(!/^\d{1,2}(\.\d)?$/.test(m))return false;
+  const t=Math.round(parseFloat(m)*10); if(t>109)return false;
+  return{t,x:false,norm:(t/10).toFixed(1)};
+}
+function parseSeries(raw,mode){
+  const v=(raw||"").trim().replace(/\s+/g,""); if(v==="")return null;
+  if(mode==="int"){
+    const m=v.match(/^(\d{1,3})(?:[-\/]?(\d{1,2})[xX]?)?$/); if(!m)return false;
+    const s=+m[1],x=m[2]?+m[2]:0;
+    if(s>100||x>10||x*10>s)return false;
+    return{t:s*10,x,norm:x?`${s}-${x}x`:String(s)};
+  }
+  const m=v.replace(",",".").match(/^(\d{1,3}(?:\.\d)?)(?:[-\/]?(\d{1,2})[xX])?$/); if(!m)return false;
+  const t=Math.round(parseFloat(m[1])*10),x=m[2]?+m[2]:0; if(t>1090||x>10)return false;
+  return{t,x,norm:(t/10).toFixed(1)+(x?`-${x}x`:"")};
+}
+const fmtT=(t,mode)=>mode==="dec"?(t/10).toFixed(1):String(Math.round(t/10));
+const serHas=(a,k)=>(a.shots||[]).slice(k*10,k*10+10).some(Boolean);
+
+function stats(a){
+  const e=ev(),n=nSer(),ser=[],vals=[];let total=0,x=0,count=0;
+  for(let k=0;k<n;k++){
+    let st={t:0,x:0,has:false,from:"none"};
+    if(serHas(a,k)){
+      st.from="shots";
+      for(let j=0;j<10;j++){const i=k*10+j;if(i>=e.shots)break;const p=parseShot(a.shots[i],e.mode);
+        vals.push(p?p.t:0);if(p){st.t+=p.t;if(p.x)st.x++;count++;st.has=true}}
+    }else{
+      const p=parseSeries((a.ser||[])[k],e.mode);
+      for(let j=0;j<10&&k*10+j<e.shots;j++)vals.push(0);
+      if(p){st={t:p.t,x:p.x,has:true,from:"series"};count+=Math.min(10,e.shots-k*10)}
+    }
+    ser.push(st);total+=st.t;x+=st.x;
+  }
+  return{total,x,count,ser,vals,any:ser.some(s=>s.has)};
+}
+function cmp(a,b){
+  if(b.st.total!==a.st.total)return b.st.total-a.st.total;
+  if(ev().mode==="int"&&b.st.x!==a.st.x)return b.st.x-a.st.x;
+  for(let i=a.st.ser.length-1;i>=0;i--)if(b.st.ser[i].t!==a.st.ser[i].t)return b.st.ser[i].t-a.st.ser[i].t;
+  for(let i=a.st.vals.length-1;i>=0;i--)if(b.st.vals[i]!==a.st.vals[i])return b.st.vals[i]-a.st.vals[i];
+  return 0;
+}
+function ranked(cat){
+  const list=[...A.values()].filter(a=>(a.cat||"W")===cat).map(a=>({a,st:stats(a)}));
+  const scored=list.filter(r=>r.st.any).sort(cmp),rest=list.filter(r=>!r.st.any).sort((p,q)=>(p.a.round||"").localeCompare(q.a.round||"")||String(p.a.lane||"").localeCompare(String(q.a.lane||""),undefined,{numeric:true}));
+  scored.forEach((r,i)=>{r.rank=i>0&&cmp(scored[i-1],r)===0?scored[i-1].rank:i+1});
+  return scored.concat(rest);
+}
+function teams(cat){
+  const size=+META.teamSize||3,groups=new Map();
+  ranked(cat).forEach(r=>{const u=(r.a.uni||"").trim();if(!u)return;if(!groups.has(u))groups.set(u,[]);groups.get(u).push(r)});
+  const out=[...groups.entries()].map(([uni,mem])=>{
+    const counted=mem.filter(r=>r.st.any).slice(0,size);
+    return{uni,mem,counted,total:counted.reduce((s,r)=>s+r.st.total,0),x:counted.reduce((s,r)=>s+r.st.x,0)};
+  }).sort((p,q)=>q.total-p.total||q.x-p.x);
+  out.forEach((t,i)=>{t.rank=i>0&&out[i-1].total===t.total&&out[i-1].x===t.x?out[i-1].rank:i+1});
+  return out;
+}
+
+/* ---------- persistence ---------- */
+const dirty=new Set(),timers=new Map(),chains=new Map();
+function persistLocal(){try{localStorage.setItem(LKEY,JSON.stringify({meta:META,athletes:[...A.entries()]}))}catch(e){}}
+function clean(a){const o={};for(const k of["name","uni","cat","round","lane","shots","ser","example"])if(a[k]!==undefined)o[k]=a[k];return o}
+function queueSave(id,delay=350){
+  dirty.add(id);
+  if(backend==="local"){persistLocal();dirty.delete(id);return}
+  clearTimeout(timers.get(id));
+  timers.set(id,setTimeout(()=>{
+    const prev=chains.get(id)||Promise.resolve();
+    const p=prev.then(async()=>{const a=A.get(id);if(!a)return;try{await db.collection("athletes").doc(id).set(clean(a))}catch(e){onWriteError(e)}})
+      .finally(()=>{if(chains.get(id)===p){chains.delete(id);dirty.delete(id)}});
+    chains.set(id,p);
+  },delay));
+}
+let metaTimer=null,metaChain=Promise.resolve();
+function saveMeta(){
+  if(backend==="local"){persistLocal();return}
+  clearTimeout(metaTimer);
+  metaTimer=setTimeout(()=>{metaChain=metaChain.then(()=>db.doc("config/meta").set({...META})).catch(onWriteError)},400);
+}
+async function addAthlete(obj){
+  if(backend==="local"){const id=rid();A.set(id,obj);persistLocal();return id}
+  const ref=db.collection("athletes").doc();A.set(ref.id,obj);dirty.add(ref.id);
+  try{await ref.set(clean(obj))}catch(e){onWriteError(e)}finally{dirty.delete(ref.id)}
+  return ref.id;
+}
+async function removeAthlete(id){
+  A.delete(id);clearTimeout(timers.get(id));
+  if(backend==="local"){persistLocal();return}
+  try{await db.collection("athletes").doc(id).delete()}catch(e){onWriteError(e)}
+}
+function onWriteError(e){
+  const c=e&&e.code;
+  if(c==="invalid_argument"){canWrite=false;applyRole();showNotice("บัญชีนี้ดูผลได้อย่างเดียว แก้คะแนนไม่ได้ — ขอสิทธิ์ Contributor จากเจ้าของหน้า")}
+  else if(c==="quota_exceeded")showNotice("พื้นที่เก็บข้อมูลเต็ม — ลบนักกีฬาที่ไม่ใช้ออกก่อน");
+  else showNotice("บันทึกไม่สำเร็จ ลองอีกครั้ง ("+(c||"error")+")");
+}
+function showNotice(msg){const n=$("notice");n.hidden=!msg;n.innerHTML=msg?`<div class="notice">${esc(msg)}</div>`:""}
+
+/* ---------- rendering ---------- */
+function renderMeta(){
+  $("event").value=META.event;$("teamSize").value=String(META.teamSize||3);
+  if(document.activeElement!==$("matchName"))$("matchName").value=META.match||"";
+  $("subline").textContent=(META.match?META.match+" · ":"")+ev().name;
+}
+function renderTabs(){
+  $("tabs").innerHTML=TABS.map(([cat,kind,th,en],i)=>{
+    const c=[...A.values()].filter(a=>(a.cat||"W")===cat).length;
+    return `<button type="button" data-t="${i}" aria-pressed="${UI.tab===i}">${th}<span class="c">${kind==="ind"?c:""}</span></button>`}).join("");
+}
+function serCell(st,mode){
+  if(!st.has)return"·";
+  return fmtT(st.t,mode)+(mode==="int"||st.x?`<span class="x">-${st.x}x</span>`:"");
+}
+function renderBoard(){
+  const e=ev(),n=nSer(),[cat,kind,th,en]=TABS[UI.tab];
+  $("boardTitle").textContent=`${th} / ${en}`;
+  $("evInfo").textContent=`${e.name} · ${e.mode==="dec"?"ทศนิยม":"เต็มหน่วย + X"}${kind==="team"?` · นับ ${META.teamSize||3} คน`:""}`;
+  let h=`<tr><th class="l">#</th><th class="l">ผลัด</th><th class="l">เลน</th><th class="l">สังกัด</th><th class="l">ชื่อ</th>`;
+  for(let i=1;i<=n;i++)h+=`<th>S${i}</th>`;
+  h+=`<th>รวม</th>${kind==="team"?"<th>ทีม</th>":"<th>นัด</th>"}</tr>`;
+  $("thead").innerHTML=h;
+  const cols=n+7;
+  const row=(r,rankCell,extra,cls="")=>`<tr class="row ${cls} ${r.a===A.get(UI.sel)?"sel":""}" data-id="${idOf(r.a)}" tabindex="0">
+    <td class="rank">${rankCell}</td><td class="l">${esc(r.a.round||"")}</td><td class="l">${esc(r.a.lane||"")}</td>
+    <td class="uni">${esc(r.a.uni||"")}</td>
+    <td class="name">${esc(r.a.name)}${r.a.example?'<span class="pill ex">ตัวอย่าง</span>':""}${r.st.count===e.shots?'<span class="pill done">ครบ</span>':""}</td>
+    ${r.st.ser.map(s=>`<td class="ser">${serCell(s,e.mode)}</td>`).join("")}
+    <td class="total">${r.st.any?fmtT(r.st.total,e.mode)+(e.mode==="int"||r.st.x?`<span class="x">-${r.st.x}X</span>`:""):"–"}</td>${extra}</tr>`;
+  if(kind==="ind"){
+    const list=ranked(cat);
+    $("tbody").innerHTML=(backend==="db"&&!started)?`<tr><td colspan="${cols}" class="empty">กำลังโหลดผลการแข่งขัน…</td></tr>`:list.length?list.map(r=>row(r,r.st.any?r.rank:"–",`<td>${r.st.count}/${e.shots}</td>`)).join("")
+      :`<tr><td colspan="${cols}" class="empty">ยังไม่มีนักกีฬาในประเภทนี้<br>${canWrite?"เพิ่มชื่อด้านล่าง หรือกด <b>วางจาก Excel</b> เพื่อนำเข้าทั้งรายชื่อ":"รอผู้บันทึกคะแนนเพิ่มรายชื่อ"}</td></tr>`;
+  }else{
+    const ts=teams(cat);
+    $("tbody").innerHTML=ts.length?ts.map(t=>t.mem.map((r,i)=>{
+      const inTeam=t.counted.includes(r);
+      return row(r,i===0?(t.total?t.rank:"–"):"",i===0?`<td class="tt">T.${fmtT(t.total,ev().mode)}${ev().mode==="int"?`<span class="x">-${t.x}X</span>`:""}</td>`:"<td></td>",(i===0?"teamstart ":"")+(inTeam||!r.st.any?"":"out"))}).join("")).join("")
+      :`<tr><td colspan="${cols}" class="empty">ยังไม่มีทีม — ใส่ชื่อมหาวิทยาลัย/ทีมให้นักกีฬา แล้วระบบจะรวมทีมให้อัตโนมัติ</td></tr>`;
+  }
+}
+function idOf(a){for(const[k,v]of A)if(v===a)return k;return""}
+
+function renderCard(){
+  const e=ev(),a=A.get(UI.sel);
+  if(!a){$("card").innerHTML=`<p class="empty">เลือกนักกีฬาจากตารางเพื่อบันทึกคะแนน</p>`;$("hint").textContent="";return}
+  const st=stats(a),n=nSer();
+  let h=`<div class="fields">
+    <label class="f" for="fName" style="grid-column:1/-1">ชื่อ / Name<input type="text" id="fName" data-k="name" value="${esc(a.name)}"></label>
+    <label class="f" for="fUni">สังกัด / Team<input type="text" id="fUni" data-k="uni" value="${esc(a.uni||"")}"></label>
+    <label class="f" for="fCat">ประเภท<select id="fCat" data-k="cat"><option value="W"${(a.cat||"W")==="W"?" selected":""}>หญิง / W</option><option value="M"${a.cat==="M"?" selected":""}>ชาย / M</option></select></label>
+    <label class="f" for="fRound">ผลัด / Relay<input type="text" id="fRound" data-k="round" value="${esc(a.round||"")}"></label>
+    <label class="f" for="fLane">เลน / Lane<input type="text" id="fLane" data-k="lane" value="${esc(a.lane||"")}"></label>
+  </div>
+  <div class="cardtop"><div class="big" id="bigTotal"></div>
+    <div class="seg" role="group" aria-label="Entry mode"><button type="button" data-m="series" aria-pressed="${UI.entry==="series"}">รวมชุด</button><button type="button" data-m="shot" aria-pressed="${UI.entry==="shot"}">ทีละนัด</button></div></div>`;
+  for(let k=0;k<n;k++){
+    h+=`<div class="series"><span class="lab">S${k+1}</span>`;
+    if(UI.entry==="shot"){
+      h+=`<div class="shots">`;
+      for(let j=0;j<10;j++){const i=k*10+j;if(i>=e.shots)break;const raw=(a.shots||[])[i]||"",p=parseShot(raw,e.mode);
+        h+=`<input type="text" id="shot-${i}" data-i="${i}" value="${esc(raw)}" inputmode="${e.mode==="dec"?"decimal":"text"}" autocomplete="off" aria-label="S${k+1} shot ${j+1}" class="${p&&p.x?"x":""}"${p===false?' aria-invalid="true"':""}>`}
+      h+=`</div>`;
+    }else if(serHas(a,k)){
+      h+=`<span class="locked">กรอกทีละนัดไว้แล้ว — สลับเป็น “ทีละนัด” เพื่อแก้</span>`;
+    }else{
+      const raw=(a.ser||[])[k]||"",p=parseSeries(raw,e.mode);
+      h+=`<input type="text" class="serin" id="ser-${k}" data-k2="${k}" value="${esc(raw)}" placeholder="${e.mode==="int"?"เช่น 89-1x":"เช่น 102.4"}" autocomplete="off" aria-label="Series ${k+1} total"${p===false?' aria-invalid="true"':""}>`;
+    }
+    h+=`<span class="st" id="st-${k}"></span></div>`;
+  }
+  h+=`<div class="rowbtns"><button type="button" id="delBtn" class="ghost">ลบนักกีฬา</button></div><div id="cardConfirm"></div>`;
+  $("card").innerHTML=h;
+  updateCardTotals(st);
+  $("hint").textContent=UI.entry==="series"
+    ?(e.mode==="int"?"พิมพ์คะแนนรวมชุดกับจำนวน X เช่น 89-1x หรือ 89 แล้วกด Enter":"พิมพ์คะแนนรวมชุดทศนิยม เช่น 102.4 แล้วกด Enter")
+    :(e.mode==="int"?"พิมพ์ 0–10 หรือ X ทีละนัด ระบบเลื่อนช่องให้อัตโนมัติ · Backspace ในช่องว่างเพื่อย้อนกลับ":"พิมพ์ 0.0–10.9 ทีละนัด ระบบเลื่อนช่องให้อัตโนมัติ · Backspace ในช่องว่างเพื่อย้อนกลับ");
+  $("delBtn").onclick=()=>confirmUI($("cardConfirm"),`ลบ “${esc(a.name)}” และคะแนนทั้งหมด?`,"ลบ",async()=>{const id=UI.sel;UI.sel=null;saveUI();await removeAthlete(id);renderAll()});
+}
+function updateCardTotals(st){
+  const e=ev(),a=A.get(UI.sel);if(!a||!$("bigTotal"))return;st=st||stats(a);
+  $("bigTotal").innerHTML=`${fmtT(st.total,e.mode)}${e.mode==="int"||st.x?`<span class="x">${st.x}X</span>`:""}<small>${st.count}/${e.shots} นัด</small>`;
+  st.ser.forEach((s,k)=>{const el=$("st-"+k);if(el)el.innerHTML=s.has?serCell(s,e.mode):"·"});
+}
+function renderAll(){renderMeta();renderTabs();renderBoard();renderCard();applyRole()}
+function refreshLive(){renderTabs();renderBoard();updateCardTotals()}
+
+function applyRole(){
+  document.body.classList.toggle("board",UI.board||!canWrite);
+  $("boardBtn").setAttribute("aria-pressed",String(UI.board));
+  for(const id of["event","matchName","teamSize","importBtn","resetBtn"])$(id).disabled=!canWrite;
+  $("addForm").hidden=!canWrite;$("boardBtn").hidden=!canWrite;
+}
+
+/* ---------- card events ---------- */
+function commitShot(inp){
+  const e=ev(),a=A.get(UI.sel),i=+inp.dataset.i,p=parseShot(inp.value,e.mode);
+  if(p===false){inp.setAttribute("aria-invalid","true");return false}
+  inp.removeAttribute("aria-invalid");if(p&&p.norm!==inp.value)inp.value=p.norm;
+  inp.classList.toggle("x",!!(p&&p.x));
+  a.shots=a.shots||[];const nv=p?p.norm:"";
+  if((a.shots[i]||"")!==nv){a.shots[i]=nv;queueSave(UI.sel)}
+  refreshLive();return true;
+}
+function commitSer(inp){
+  const e=ev(),a=A.get(UI.sel),k=+inp.dataset.k2,p=parseSeries(inp.value,e.mode);
+  if(p===false){inp.setAttribute("aria-invalid","true");return false}
+  inp.removeAttribute("aria-invalid");if(p&&p.norm!==inp.value)inp.value=p.norm;
+  a.ser=a.ser||[];const nv=p?p.norm:"";
+  if((a.ser[k]||"")!==nv){a.ser[k]=nv;queueSave(UI.sel)}
+  refreshLive();return true;
+}
+const card=$("card");
+card.addEventListener("input",x=>{
+  const t=x.target;
+  if(t.dataset.k){const a=A.get(UI.sel);a[t.dataset.k]=t.value;if(a.example&&t.dataset.k==="name")a.example=false;queueSave(UI.sel,600);renderTabs();renderBoard();return}
+  if(t.dataset.i){const e=ev(),v=t.value.trim();
+    const done=e.mode==="int"?/^([xX]|10|[2-9])$/.test(v):/^(10\.\d|[0-9]\.\d)$/.test(v);
+    if(done&&commitShot(t)){const nx=$("shot-"+(+t.dataset.i+1));if(nx){nx.focus();nx.select()}}}
+});
+card.addEventListener("change",x=>{const t=x.target;if(t.dataset.k==="cat"){A.get(UI.sel).cat=t.value;queueSave(UI.sel,0);renderTabs();renderBoard()}});
+card.addEventListener("keydown",k=>{
+  const t=k.target;
+  if(t.dataset.i){const i=+t.dataset.i;
+    if(k.key==="Enter"){k.preventDefault();if(commitShot(t)){const nx=$("shot-"+(i+1));if(nx){nx.focus();nx.select()}}}
+    else if(k.key==="Backspace"&&t.value===""&&i>0){k.preventDefault();const pv=$("shot-"+(i-1));pv.focus();pv.select()}}
+  if(t.dataset.k2!==undefined&&k.key==="Enter"){k.preventDefault();if(commitSer(t)){const nx=$("ser-"+(+t.dataset.k2+1));if(nx){nx.focus();nx.select()}else t.blur()}}
+});
+card.addEventListener("focusout",f=>{const t=f.target;if(t.dataset&&t.dataset.i)commitShot(t);else if(t.dataset&&t.dataset.k2!==undefined)commitSer(t)});
+card.addEventListener("click",c=>{const b=c.target.closest("[data-m]");if(b){UI.entry=b.dataset.m;saveUI();renderCard()}});
+
+function select(id){UI.sel=id;saveUI();renderBoard();if(canWrite&&!UI.board){renderCard();
+  const first=card.querySelector(".serin:not([value]),.serin[value=''],.shots input[value='']")||card.querySelector(".serin,.shots input");
+  if(first&&window.innerWidth>980)first.focus({preventScroll:true})}}
+$("tbody").addEventListener("click",c=>{const tr=c.target.closest("tr[data-id]");if(tr&&tr.dataset.id)select(tr.dataset.id)});
+$("tbody").addEventListener("keydown",k=>{if(k.key==="Enter"){const tr=k.target.closest("tr[data-id]");if(tr)select(tr.dataset.id)}});
+$("tabs").addEventListener("click",c=>{const b=c.target.closest("[data-t]");if(b){UI.tab=+b.dataset.t;saveUI();renderTabs();renderBoard()}});
+
+$("addForm").addEventListener("submit",async f=>{
+  f.preventDefault();const n=$("newName").value.trim();if(!n)return;
+  const id=await addAthlete({name:n,uni:$("newUni").value.trim(),cat:TABS[UI.tab][0],round:"",lane:"",shots:[],ser:[]});
+  $("newName").value="";$("newUni").value="";renderTabs();select(id);
+});
+
+/* ---------- toolbar ---------- */
+function confirmUI(box,msg,yes,fn){
+  box.hidden=false;
+  box.innerHTML=`<div class="confirm"><span>${msg}</span><button type="button" class="primary" data-a="y">${yes}</button><button type="button" data-a="n">ยกเลิก</button></div>`;
+  box.querySelector('[data-a="y"]').onclick=()=>{box.hidden=true;box.innerHTML="";fn()};
+  box.querySelector('[data-a="n"]').onclick=()=>{box.hidden=true;box.innerHTML=""};
+}
+$("event").innerHTML=Object.entries(EVENTS).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join("");
+$("event").addEventListener("change",()=>{
+  const nk=$("event").value,old=META.event,same=EVENTS[nk].mode===EVENTS[old].mode;
+  const has=[...A.values()].some(a=>(a.shots||[]).some(Boolean)||(a.ser||[]).some(Boolean));
+  const apply=()=>{META.event=nk;saveMeta();if(!same)for(const[id,a]of A){if((a.shots||[]).some(Boolean)||(a.ser||[]).some(Boolean)){a.shots=[];a.ser=[];queueSave(id,0)}}renderAll()};
+  if(has&&!same){$("event").value=old;confirmUI($("confirmBox"),"รายการนี้ใช้ระบบคะแนนต่างกัน — เปลี่ยนแล้วคะแนนทั้งหมดจะถูกล้าง (รายชื่อยังอยู่)","เปลี่ยนและล้างคะแนน",()=>{$("event").value=nk;apply()})}
+  else apply();
+});
+$("matchName").addEventListener("input",()=>{META.match=$("matchName").value;saveMeta();$("subline").textContent=(META.match?META.match+" · ":"")+ev().name});
+$("teamSize").addEventListener("change",()=>{META.teamSize=+$("teamSize").value;saveMeta();renderBoard()});
+$("boardBtn").onclick=()=>{UI.board=!UI.board;saveUI();applyRole();if(!UI.board)renderCard()};
+$("resetBtn").onclick=()=>confirmUI($("confirmBox"),`ลบนักกีฬาทั้ง ${A.size} คนและคะแนนทั้งหมด? ลบแล้วกู้คืนไม่ได้`,"ลบทั้งหมด",async()=>{
+  const ids=[...A.keys()];UI.sel=null;saveUI();for(const id of ids)await removeAthlete(id);renderAll()});
+
+/* import */
+$("importBtn").onclick=()=>{
+  const p=$("importPanel");p.hidden=!p.hidden;if(p.hidden)return;
+  p.innerHTML=`<h2>วางข้อมูลจาก Excel / Google Sheets <small>คัดลอกทั้งตารางแล้ววางด้านล่าง (แถวหัวตารางจะถูกข้ามอัตโนมัติ)</small></h2>
+  <p class="rules">ลำดับคอลัมน์: <b>ชื่อ · สังกัด · ประเภท (W/M หรือ หญิง/ชาย) · ผลัด · เลน · S1 · S2 · …</b> — คอลัมน์ S เว้นว่างได้ ใส่ได้ทั้ง <code>89-1x</code> หรือ <code>89</code></p>
+  <pre>ชื่อ\tสังกัด\tประเภท\tผลัด\tเลน\tS1\tS2
+นางสาวสมหญิง ใจดี\tTU\tW\t1\t3\t89-1x\t87-0x
+นายสมชาย ยิงตรง\tTU\tM\t1\t4</pre>
+  <textarea id="impText" rows="7" aria-label="Pasted rows"></textarea>
+  <div class="rowbtns"><button type="button" class="primary" id="impGo">นำเข้า</button><button type="button" id="impEx">ใส่ข้อมูลตัวอย่าง</button><button type="button" class="ghost" id="impClose">ปิด</button><span class="meta" id="impMsg"></span></div>`;
+  $("impClose").onclick=()=>{p.hidden=true};
+  $("impText").addEventListener("input",()=>{const r=parseImport($("impText").value);$("impMsg").textContent=r.rows.length?`พบ ${r.rows.length} คน${r.bad?` · ค่าคะแนนอ่านไม่ได้ ${r.bad} ช่อง (จะเว้นว่าง)`:""}`:""});
+  $("impGo").onclick=async()=>{const r=parseImport($("impText").value);if(!r.rows.length){$("impMsg").textContent="ไม่พบข้อมูล — วางจากตารางที่มีคอลัมน์ชื่อก่อน";return}
+    $("impGo").disabled=true;let i=0;for(const a of r.rows){await addAthlete(a);$("impMsg").textContent=`นำเข้าแล้ว ${++i}/${r.rows.length}`}
+    $("impGo").disabled=false;$("impText").value="";renderAll()};
+  $("impEx").onclick=async()=>{$("impEx").disabled=true;for(const a of exampleRows())await addAthlete(a);$("impMsg").textContent="เพิ่มข้อมูลตัวอย่างแล้ว (ติดป้าย “ตัวอย่าง” ลบได้)";$("impEx").disabled=false;renderAll()};
+};
+function parseImport(text){
+  const e=ev(),rows=[];let bad=0;
+  text.split(/\r?\n/).forEach(line=>{
+    if(!line.trim())return;
+    const c=line.includes("\t")?line.split("\t"):line.split(",");
+    const name=(c[0]||"").trim();if(!name||/^(name|ชื่อ|ชื่อ-สกุล)$/i.test(name))return;
+    const catRaw=(c[2]||"").trim().toLowerCase();
+    const cat=/^(m|ชาย|men|male|man)/.test(catRaw)?"M":"W";
+    const ser=[];for(let k=0;k<nSer();k++){const v=(c[5+k]||"").trim();if(!v){ser.push("");continue}const p=parseSeries(v,e.mode);if(p)ser.push(p.norm);else{ser.push("");bad++}}
+    rows.push({name,uni:(c[1]||"").trim(),cat,round:(c[3]||"").trim(),lane:(c[4]||"").trim(),shots:[],ser});
+  });
+  return{rows,bad};
+}
+function exampleRows(){
+  const int=ev().mode==="int";
+    const mk=(name,uni,cat,round,lane,ser)=>({name,uni,cat,round,lane,shots:[],ser:int?ser:ser.map(v=>{const m=v.match(/^(\d+)/);return(+m[1]+12.4).toFixed(1)}),example:true});
+  return[
+    mk("นักกีฬา A1 (ตัวอย่าง)","TU","W","1","1",["91-2x","90-1x","92-3x","89-0x","93-2x","90-1x"]),
+    mk("นักกีฬา A2 (ตัวอย่าง)","TU","W","1","2",["88-1x","87-0x","90-2x","86-1x","89-0x","88-1x"]),
+    mk("นักกีฬา A3 (ตัวอย่าง)","TU","W","1","3",["85-0x","88-1x","84-0x","87-1x","86-0x","85-0x"]),
+    mk("นักกีฬา B1 (ตัวอย่าง)","KU","W","2","1",["90-1x","92-2x","89-1x","91-1x","90-0x","92-3x"]),
+    mk("นักกีฬา B2 (ตัวอย่าง)","KU","W","2","2",["86-0x","85-1x","88-0x","87-1x","84-0x","86-0x"]),
+    mk("นักกีฬา B3 (ตัวอย่าง)","KU","W","2","3",["82-0x","84-0x","83-1x","85-0x","80-0x","84-0x"]),
+    mk("นักกีฬา C1 (ตัวอย่าง)","TU","M","1","4",["93-3x","94-2x","92-1x","95-4x","93-2x","94-3x"]),
+    mk("นักกีฬา C2 (ตัวอย่าง)","KU","M","2","4",["92-2x","91-1x","93-2x","94-3x","92-1x","93-2x"])
+  ].map(a=>{a.ser=a.ser.slice(0,nSer());return a});
+}
+
+/* CSV */
+$("copyBtn").onclick=async()=>{
+  const e=ev(),n=nSer(),q=v=>/[",\n]/.test(String(v))?`"${String(v).replace(/"/g,'""')}"`:v;
+  const out=[[`# ${META.match||""}`,e.name]];
+  for(const cat of["W","M"]){
+    out.push([],[cat==="W"?"Women":"Men"],["Rank","Relay","Lane","Team","Name",...Array.from({length:n},(_,i)=>"S"+(i+1)),"Total","X"]);
+    ranked(cat).forEach(r=>out.push([r.st.any?r.rank:"",r.a.round,r.a.lane,r.a.uni,r.a.name,...r.st.ser.map(s=>s.has?fmtT(s.t,e.mode):""),r.st.any?fmtT(r.st.total,e.mode):"",r.st.x]));
+    out.push([],[(cat==="W"?"Women":"Men")+" team"],["Rank","Team","Total","X","Counted"]);
+    teams(cat).forEach(t=>out.push([t.rank,t.uni,fmtT(t.total,e.mode),t.x,t.counted.map(r=>r.a.name).join(" / ")]));
+  }
+  const csv=out.map(r=>r.map(q).join(",")).join("\n");
+  try{await navigator.clipboard.writeText(csv);$("liveText").textContent="คัดลอก CSV แล้ว — วางใน Google Sheets ได้เลย";setTimeout(setLive,4000)}
+  catch(err){const box=$("confirmBox");box.hidden=false;
+    box.innerHTML=`<div class="confirm" style="flex-direction:column;align-items:stretch"><span>คัดลอกอัตโนมัติไม่ได้ — เลือกข้อความแล้วกด Ctrl+C</span><textarea id="csvOut" rows="6" style="font-family:var(--mono);font-size:.8rem;width:100%">${esc(csv)}</textarea><button type="button" id="csvClose">ปิด</button></div>`;
+    $("csvOut").select();$("csvClose").onclick=()=>{box.hidden=true;box.innerHTML=""}}
+};
+
+/* ---------- boot ---------- */
+function setLive(){
+  $("liveDot").classList.toggle("live",backend==="db");
+  $("liveText").textContent=backend==="db"?(canWrite?"LIVE · ทุกเครื่องเห็นคะแนนเดียวกัน":"LIVE · ดูผลอย่างเดียว"):"ออฟไลน์ · ข้อมูลอยู่ในเครื่องนี้";
+}
+function bootLocal(){
+  backend="local";canWrite=true;
+  try{const s=JSON.parse(localStorage.getItem(LKEY));if(s){Object.assign(META,s.meta||{});(s.athletes||[]).forEach(([k,v])=>A.set(k,v))}}catch(e){}
+  setLive();renderAll();
+}
+let started=false;
+async function boot(){
+  renderAll();
+  const c=window.claude;
+  const dbNs=null; // local-only build: data stays in this browser
+  if(!dbNs){bootLocal();return}
+  db=dbNs;backend="db";
+  try{const u=await c.use("user");const w=u?await u.can("data.write"):null;canWrite=w!==false}catch(e){}
+  setLive();applyRole();
+  db.doc("config/meta").onSnapshot(s=>{
+    if(s.exists){const d=s.data();META={event:d.event in EVENTS?d.event:"ap60",match:d.match||"",teamSize:d.teamSize||3}}
+    renderMeta();renderBoard();if(!card.contains(document.activeElement))renderCard();else updateCardTotals();
+  },err=>showNotice("เชื่อมต่อข้อมูลไม่ได้ ("+err.code+") — รีเฟรชหน้าอีกครั้ง"));
+  db.collection("athletes").onSnapshot(snap=>{
+    const seen=new Set();
+    snap.docs.forEach(d=>{seen.add(d.id);if(dirty.has(d.id))return;const v=d.data();A.set(d.id,{...v,shots:[...(v.shots||[])],ser:[...(v.ser||[])]})});
+    for(const id of[...A.keys()])if(!seen.has(id)&&!dirty.has(id))A.delete(id);
+    if(UI.sel&&!A.has(UI.sel))UI.sel=null;
+    renderTabs();renderBoard();
+    if(!card.contains(document.activeElement))renderCard();else updateCardTotals();
+    started=true;
+  },err=>showNotice("เชื่อมต่อข้อมูลไม่ได้ ("+err.code+") — รีเฟรชหน้าอีกครั้ง"));
+}
+boot();
+</script>
