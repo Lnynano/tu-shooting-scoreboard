@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>TU Shooting — Staff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>TU Shooting <span>Staff</span></h1>
+      <p class="sub" id="subline">กรอกคะแนน · Score entry</p>
+    </div>
+    <div class="status">
+      <span id="userBox" hidden><span id="userEmail"></span> <button type="button" id="logoutBtn" class="ghost">ออกจากระบบ</button></span>
+      <span class="dot" id="liveDot"></span><span id="liveText">กำลังเชื่อมต่อ…</span>
+    </div>
+  </header>
+
+  <p id="loadingView" class="meta">กำลังตรวจสอบการเข้าสู่ระบบ…</p>
+
+  <!-- login -->
+  <section class="panel login" id="authView" hidden>
+    <h2>เข้าสู่ระบบ <small>Staff login</small></h2>
+    <form id="loginForm" class="login" style="margin:0">
+      <label class="f" for="email">อีเมล / Email<input type="email" id="email" autocomplete="username" required></label>
+      <label class="f" for="password">รหัสผ่าน / Password<input type="password" id="password" autocomplete="current-password" required></label>
+      <button class="primary" type="submit" id="loginBtn">เข้าสู่ระบบ</button>
+      <div id="loginErr" class="notice err" hidden></div>
+    </form>
+  </section>
+
+  <!-- signed in but not staff -->
+  <section class="panel login" id="deniedView" hidden>
+    <h2>ไม่มีสิทธิ์ <small>No access</small></h2>
+    <div class="notice err" id="deniedMsg">บัญชีนี้ไม่มีสิทธิ์กรอกคะแนน</div>
+    <button type="button" id="deniedLogout">ออกจากระบบ</button>
+  </section>
+
+  <!-- staff app -->
+  <div id="appView" hidden style="display:flex;flex-direction:column;gap:14px">
+    <div class="bar">
+      <label class="f" for="compSel">การแข่งขัน / Competition
+        <select id="compSel"></select>
+      </label>
+      <button type="button" id="newCompBtn">+ สร้างการแข่งขัน</button>
+      <label class="f" for="compName">ชื่อ / Name
+        <input type="text" id="compName" placeholder="เช่น TU Open 2026" autocomplete="off">
+      </label>
+      <label class="f" for="event">รายการ / Event
+        <select id="event"></select>
+      </label>
+      <label class="f" for="teamSize">นับทีม / Team counts
+        <select id="teamSize"><option value="2">ดีที่สุด 2 คน</option><option value="3">ดีที่สุด 3 คน</option><option value="4">ดีที่สุด 4 คน</option></select>
+      </label>
+      <button type="button" id="activeBtn" class="primary">ตั้งเป็นรายการที่แสดง</button>
+      <span class="meta" id="activeBadge" hidden>● กำลังแสดงบนหน้าสาธารณะ</span>
+    </div>
+    <div class="bar">
+      <button type="button" id="importBtn">วางจาก Excel</button>
+      <button type="button" id="copyBtn">คัดลอกผล (CSV)</button>
+      <span class="spacer"></span>
+      <span class="linkrow" id="links"></span>
+      <span class="save" id="saveStatus" role="status" aria-live="polite"></span>
+      <button type="button" id="retryBtn" hidden>ลองบันทึกใหม่</button>
+    </div>
+    <div id="notice" hidden></div>
+    <div id="confirmBox" hidden></div>
+    <section class="panel import" id="importPanel" hidden></section>
+
+    <nav class="tabs" id="tabs" aria-label="Categories"></nav>
+
+    <main class="two">
+      <section class="panel" aria-labelledby="resH">
+        <h2 id="resH"><span id="boardTitle">ผลการแข่งขัน</span> <small id="evInfo"></small></h2>
+        <div class="tablebox"><table>
+          <thead id="thead"></thead>
+          <tbody id="tbody"></tbody>
+        </table></div>
+        <form class="add" id="addForm">
+          <input type="text" id="newName" placeholder="ชื่อนักกีฬา / Name" aria-label="Athlete name" required>
+          <input type="text" id="newUni" placeholder="มหาวิทยาลัย / ทีม" aria-label="University or team">
+          <button class="primary" type="submit">+ เพิ่มนักกีฬา</button>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="cardH">
+        <h2 id="cardH">ใบบันทึกคะแนน / Score card</h2>
+        <div id="card"></div>
+        <p class="hint" id="hint"></p>
+      </section>
+    </main>
+
+    <section class="panel rules">
+      <b>กรอกแบบรวมชุด:</b> พิมพ์ <code>89-1x</code> (89 คะแนน, 1 X) หรือ <code>89</code> · ปืนยาวทศนิยมพิมพ์ <code>102.4</code>.
+      <b>ทีละนัด:</b> 0–10 หรือ X (pistol) · 0.0–10.9 (rifle) — ถ้ากรอกทีละนัดในชุดใด จะใช้ค่าทีละนัดของชุดนั้น.
+    </section>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/scoring.js"></script>
+<script src="js/render.js"></script>
+<script src="js/staff.js"></script>
+</body>
+</html>
