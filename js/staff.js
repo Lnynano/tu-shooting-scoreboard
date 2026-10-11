@@ -211,7 +211,7 @@
   }
   function renderMeta() {
     const c = comp();
-    for (const id of ["compName", "event", "teamSize", "activeBtn", "delCompBtn", "importBtn", "copyBtn", "histBtn"]) $(id).disabled = !c;
+    for (const id of ["compName", "event", "teamSize", "activeBtn", "delCompBtn", "importBtn", "copyBtn", "histBtn", "printBtn2"]) $(id).disabled = !c;
     $("addForm").hidden = !c;
     if (!c) { $("subline").textContent = L("สร้างการแข่งขันก่อน · Create a competition to begin", "Create a competition to begin"); $("links").innerHTML = ""; $("activeBadge").hidden = true; return; }
     $("event").value = c.event;
@@ -645,6 +645,9 @@ Somchai Yingtrong\tTU\tM\t1\t4</pre>
     }
     loadHistory();
   });
+
+  /* ---------- printable sheet ---------- */
+  $("printBtn2").onclick = () => { const c = comp(); if (c) window.open("print.html?c=" + encodeURIComponent(c.id), "_blank", "noopener"); };
 
   /* ---------- CSV ---------- */
   $("copyBtn").onclick = async () => {

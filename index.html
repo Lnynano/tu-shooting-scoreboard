@@ -30,6 +30,7 @@
       <select id="relaySel"></select></label>
     <button type="button" id="clearF" class="ghost" hidden><span class="l-th">ล้างตัวกรอง</span><span class="l-en">Clear</span></button>
     <span class="meta" id="fCount"></span>
+    <a class="plink" id="printLink" href="print.html"><span class="l-th">🖨 พิมพ์ผล</span><span class="l-en">🖨 Print</span></a>
   </div>
 
   <main>
@@ -57,7 +58,7 @@
   const F = { q: Render.getParam("q") || "", relay: Render.getParam("relay") || "" };
   $("q").value = F.q;
   const c = Render.getParam("c");
-  if (c) $("boardLink").href = "board.html?c=" + encodeURIComponent(c);
+  if (c) { $("boardLink").href = "board.html?c=" + encodeURIComponent(c); $("printLink").href = "print.html?c=" + encodeURIComponent(c); }
 
   function draw() {
     const comp = state && state.comp;
