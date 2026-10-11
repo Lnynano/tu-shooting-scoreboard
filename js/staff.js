@@ -184,7 +184,7 @@
   }
   function renderMeta() {
     const c = comp();
-    for (const id of ["compName", "event", "teamSize", "activeBtn", "importBtn", "copyBtn"]) $(id).disabled = !c;
+    for (const id of ["compName", "event", "teamSize", "activeBtn", "delCompBtn", "importBtn", "copyBtn"]) $(id).disabled = !c;
     $("addForm").hidden = !c;
     if (!c) { $("subline").textContent = "สร้างการแข่งขันก่อน · Create a competition to begin"; $("links").innerHTML = ""; $("activeBadge").hidden = true; return; }
     $("event").value = c.event;
@@ -217,6 +217,21 @@
     if (comp() && v) { comp().name = v; $("subline").textContent = `${v} · ${ev().name}`; renderCompSel(); }
   });
   $("teamSize").addEventListener("change", () => { patchComp({ team_size: +$("teamSize").value }); renderBoard(); });
+  $("delCompBtn").onclick = () => {
+    const c = comp(); if (!c) return;
+    const n = athletes().size;
+    confirmUI($("confirmBox"), `ลบการแข่งขัน “${esc(c.name)}” พร้อมนักกีฬา ${n} คนและคะแนนทั้งหมด? กู้คืนไม่ได้`, "ลบการแข่งขัน", async () => {
+      const res = await run(() => sb.from("competitions").delete().eq("id", c.id).select("id"));
+      if (res && !res.data.length) { errMsg = "ลบไม่สำเร็จ (ไม่พบแถวหรือไม่มีสิทธิ์)"; setSave(); return; }
+      if (!res) return;
+      for (const id of [...dirty]) { clearTimeout(timers.get(id)); dirty.delete(id); }
+      if (W) { W.stop(); W = null; }
+      await loadComps();
+      const next = comps.find((x) => x.is_active) || comps[0];
+      UI.comp = null; UI.sel = null;
+      if (next) selectComp(next.id); else renderAll();
+    });
+  };
   $("activeBtn").onclick = async () => {
     const c = comp(); if (!c) return;
     const res = await run(() => sb.rpc("set_active_competition", { cid: c.id }));
