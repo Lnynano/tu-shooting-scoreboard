@@ -196,7 +196,7 @@
     if (c) { const i = comps.findIndex((x) => x.id === c.id); if (i >= 0) comps[i] = c; else comps.unshift(c); }
     if (UI.sel && !s.athletes.has(UI.sel)) UI.sel = null;
     renderCompSel(); renderMeta(); renderTabs(); renderBoard();
-    if (!$("card").contains(document.activeElement)) renderCard(); else updateCardTotals();
+    if (!$("card").contains(document.activeElement) && !$("keypad").contains(document.activeElement)) renderCard(); else updateCardTotals();
   }
 
   /* ---------- competitions ---------- */
@@ -318,7 +318,8 @@
   const card = $("card");
   function renderCard() {
     const e = ev(), a = athletes().get(UI.sel), n = S.nSer(evKey());
-    if (!a) { card.innerHTML = `<p class="empty">${L("เลือกนักกีฬาจากตารางเพื่อบันทึกคะแนน", "Select an athlete in the table to enter scores")}</p>`; $("hint").textContent = ""; return; }
+    if (!a) { card.innerHTML = `<p class="empty">${L("เลือกนักกีฬาจากตารางเพื่อบันทึกคะแนน", "Select an athlete in the table to enter scores")}</p>`; $("hint").textContent = ""; renderKeypad(); return; }
+    const kp = kpOn();
     const st = S.stats(a, evKey());
     let h = `<div class="fields">
       <label class="f" for="fName" style="grid-column:1/-1">${L("ชื่อ / Name", "Name")}<input type="text" id="fName" data-k="name" value="${esc(a.name)}"></label>
@@ -328,7 +329,7 @@
       <label class="f" for="fLane">${L("ลู่ / Lane", "Lane")}<input type="text" id="fLane" data-k="lane" value="${esc(a.lane || "")}"></label>
     </div>
     <div class="cardtop"><div class="big" id="bigTotal"></div>
-      <div class="seg" role="group" aria-label="Entry mode"><button type="button" data-m="series" aria-pressed="${UI.entry === "series"}">${L("รวมชุด", "Series total")}</button><button type="button" data-m="shot" aria-pressed="${UI.entry === "shot"}">${L("ทีละนัด", "Per shot")}</button></div></div>`;
+      <button type="button" id="kpBtn" class="ghost" aria-pressed="${kp}" title="${L("แป้นกดบนจอ", "On-screen keypad")}" aria-label="${L("แป้นกดบนจอ", "On-screen keypad")}">⌨</button><div class="seg" role="group" aria-label="Entry mode"><button type="button" data-m="series" aria-pressed="${UI.entry === "series"}">${L("รวมชุด", "Series total")}</button><button type="button" data-m="shot" aria-pressed="${UI.entry === "shot"}">${L("ทีละนัด", "Per shot")}</button></div></div>`;
     for (let k = 0; k < n; k++) {
       h += `<div class="series"><span class="lab">S${k + 1}</span>`;
       if (UI.entry === "shot") {
@@ -336,20 +337,21 @@
         for (let j = 0; j < 10; j++) {
           const i = k * 10 + j; if (i >= e.shots) break;
           const raw = (a.shots || [])[i] || "", p = S.parseShot(raw, e.mode);
-          h += `<input type="text" id="shot-${i}" data-i="${i}" value="${esc(raw)}" inputmode="${e.mode === "dec" ? "decimal" : "text"}" autocomplete="off" aria-label="S${k + 1} shot ${j + 1}" class="${p && p.x ? "x" : ""}"${p === false ? ' aria-invalid="true"' : ""}>`;
+          h += `<input type="text" id="shot-${i}" data-i="${i}" value="${esc(raw)}" inputmode="${kp ? "none" : e.mode === "dec" ? "decimal" : "text"}" autocomplete="off" aria-label="S${k + 1} shot ${j + 1}" class="${p && p.x ? "x" : ""}"${p === false ? ' aria-invalid="true"' : ""}>`;
         }
         h += `</div>`;
       } else if (S.serHas(a, k)) {
         h += `<span class="locked">${L("กรอกทีละนัดไว้แล้ว — สลับเป็น “ทีละนัด” เพื่อแก้", "Entered per shot — switch to “Per shot” to edit")}</span>`;
       } else {
         const raw = (a.ser || [])[k] || "", p = S.parseSeries(raw, e.mode);
-        h += `<input type="text" class="serin" id="ser-${k}" data-k2="${k}" value="${esc(raw)}" placeholder="${e.mode === "int" ? L("เช่น 89-1x", "e.g. 89-1x") : L("เช่น 102.4", "e.g. 102.4")}" autocomplete="off" aria-label="Series ${k + 1} total"${p === false ? ' aria-invalid="true"' : ""}>`;
+        h += `<input type="text" class="serin" id="ser-${k}" data-k2="${k}" value="${esc(raw)}"${kp ? ' inputmode="none"' : ""} placeholder="${e.mode === "int" ? L("เช่น 89-1x", "e.g. 89-1x") : L("เช่น 102.4", "e.g. 102.4")}" autocomplete="off" aria-label="Series ${k + 1} total"${p === false ? ' aria-invalid="true"' : ""}>`;
       }
       h += `<span class="st" id="st-${k}"></span></div>`;
     }
     h += `<div class="rowbtns"><button type="button" id="delBtn" class="ghost">${L("ลบนักกีฬา", "Delete athlete")}</button></div><div id="cardConfirm"></div>`;
     card.innerHTML = h;
     updateCardTotals(st);
+    renderKeypad();
     $("hint").textContent = UI.entry === "series"
       ? (e.mode === "int" ? L("พิมพ์คะแนนรวมชุดกับจำนวน X เช่น 89-1x หรือ 89 แล้วกด Enter", "Type the series total and X count, e.g. 89-1x or 89, then press Enter") : L("พิมพ์คะแนนรวมชุดทศนิยม เช่น 102.4 แล้วกด Enter", "Type the decimal series total, e.g. 102.4, then press Enter"))
       : (e.mode === "int" ? L("พิมพ์ 0–10 หรือ X ทีละนัด ระบบเลื่อนช่องให้อัตโนมัติ · Backspace ในช่องว่างเพื่อย้อนกลับ", "Type 0–10 or X per shot; focus advances automatically · Backspace in an empty box goes back") : L("พิมพ์ 0.0–10.9 ทีละนัด ระบบเลื่อนช่องให้อัตโนมัติ · Backspace ในช่องว่างเพื่อย้อนกลับ", "Type 0.0–10.9 per shot; focus advances automatically · Backspace in an empty box goes back"));
@@ -428,7 +430,85 @@
     const t = f.target;
     if (t.dataset && t.dataset.i) commitShot(t); else if (t.dataset && t.dataset.k2 !== undefined) commitSer(t);
   });
-  card.addEventListener("click", (c) => { const b = c.target.closest("[data-m]"); if (b) { UI.entry = b.dataset.m; saveUI(); renderCard(); } });
+  card.addEventListener("click", (c) => {
+    const b = c.target.closest("[data-m]");
+    if (b) { UI.entry = b.dataset.m; saveUI(); renderCard(); return; }
+    if (c.target.closest("#kpBtn")) { UI.keypad = !kpOn(); saveUI(); renderCard(); }
+  });
+
+  /* ---------- on-screen keypad (phones / tablets) ---------- */
+  // Pistol: one tap per shot (0-10, X). Rifle: whole number, then tenths. Series totals: digits - x . and Next.
+  const coarse = !!(window.matchMedia && matchMedia("(pointer: coarse)").matches);
+  function kpOn() { return UI.keypad === true || (UI.keypad == null && (coarse || window.innerWidth <= 700)); }
+  let kpWhole = null, lastIn = null;
+  const inputs = () => [...card.querySelectorAll(UI.entry === "shot" ? ".shots input" : ".serin")];
+  function kpTarget() {
+    const all = inputs();
+    const ae = document.activeElement;
+    let el = all.includes(ae) ? ae : lastIn && $(lastIn);   // the box that has focus wins
+    if (!el || !card.contains(el) || !all.includes(el)) el = all.find((i) => !i.value) || all[0] || null;
+    return el;
+  }
+  const nextOf = (el) => { const all = inputs(), i = all.indexOf(el); return i >= 0 ? all[i + 1] || null : null; };
+  const prevOf = (el) => { const all = inputs(), i = all.indexOf(el); return i > 0 ? all[i - 1] : null; };
+  card.addEventListener("focusin", (e) => {
+    if (e.target.matches("input[data-i],input[data-k2]") && e.target.id !== lastIn) { lastIn = e.target.id; kpWhole = null; renderKeypad(); }
+  });
+
+  function renderKeypad() {
+    const kp = $("keypad"), a = athletes().get(UI.sel), t = a && kpOn() ? kpTarget() : null;
+    document.body.classList.toggle("has-kp", !!t);
+    if (!t) { kp.hidden = true; kp.innerHTML = ""; return; }
+    const e = ev(), isShot = t.dataset.i !== undefined, btn = (cls, k, label, extra = "") => `<button type="button" class="kp ${cls}" data-kp="${k}"${extra}>${label}</button>`;
+    let keys = "", head = `${esc(t.getAttribute("aria-label") || "")}`;
+    if (isShot && e.mode === "int") {
+      keys = [..."0123456789"].map((d) => btn("", d, d)).join("") + btn("", "10", "10") + btn("kp-x", "X", "X") + btn("kp-w", "back", "⌫", ' aria-label="Backspace"');
+    } else if (isShot) {
+      if (kpWhole == null) {
+        keys = Array.from({ length: 11 }, (_, d) => btn("", "w" + d, d)).join("") + btn("kp-w", "back", "⌫", ' aria-label="Backspace"');
+      } else {
+        head += ` · ${kpWhole}.`;
+        keys = Array.from({ length: 10 }, (_, d) => btn("", "t" + d, "." + d)).join("") + btn("kp-w", "undo", "←", ' aria-label="Back"');
+      }
+    } else {
+      const dec = e.mode === "dec";
+      keys = ["7", "8", "9"].map((d) => btn("", d, d)).join("") + btn("kp-w", "back", "⌫", ' aria-label="Backspace"') +
+        ["4", "5", "6"].map((d) => btn("", d, d)).join("") + btn("", "-", "-") +
+        ["1", "2", "3"].map((d) => btn("", d, d)).join("") + btn("", "x", "x") +
+        btn("", "0", "0") + (dec ? btn("", ".", ".") : "<span></span>") + btn("kp-n", "next", L("ถัดไป ▸", "Next ▸"), ' style="grid-column:span 2"');
+    }
+    kp.hidden = false;
+    kp.innerHTML = `<div class="kp-head">${head}</div><div class="kp-grid ${isShot && e.mode === "int" ? "kp-int" : isShot && kpWhole == null ? "kp-dec" : isShot ? "kp-ten" : "kp-ser"}">${keys}</div>`;
+  }
+
+  function kpCommitShot(el, val) {
+    el.value = val; kpWhole = null;
+    if (commitShot(el)) { const nx = nextOf(el); if (nx) { lastIn = nx.id; nx.focus(); } else lastIn = null; renderKeypad(); }
+  }
+  $("keypad").addEventListener("mousedown", (e) => { if (e.target.closest("button")) e.preventDefault(); }); // keep focus where it is
+  $("keypad").addEventListener("click", (c) => {
+    const b = c.target.closest("[data-kp]");
+    const el = kpTarget();
+    if (!b || !el) return;
+    const k = b.dataset.kp, isShot = el.dataset.i !== undefined;
+    if (isShot) {
+      if (k === "back") {
+        kpWhole = null;
+        if (el.value) { el.value = ""; commitShot(el); renderKeypad(); }
+        else { const pv = prevOf(el); if (pv) { lastIn = pv.id; pv.focus(); pv.value = ""; commitShot(pv); renderKeypad(); } }
+      } else if (k === "undo") { kpWhole = null; renderKeypad(); }
+      else if (k[0] === "w") { kpWhole = +k.slice(1); renderKeypad(); }
+      else if (k[0] === "t") kpCommitShot(el, `${kpWhole}.${k.slice(1)}`);
+      else kpCommitShot(el, k);
+      return;
+    }
+    // series total box
+    if (k === "next") { if (commitSer(el)) { const nx = nextOf(el); if (nx) { lastIn = nx.id; nx.focus(); } else { lastIn = null; el.blur(); } renderKeypad(); } }
+    else if (k === "back") el.value = el.value.slice(0, -1);
+    else el.value += k;
+    if (k !== "next") { el.focus(); el.removeAttribute("aria-invalid"); }
+  });
+  window.addEventListener("resize", () => { if (UI.sel && UI.keypad == null) renderCard(); });
 
   /* ---------- add athlete ---------- */
   $("addForm").addEventListener("submit", async (f) => {
