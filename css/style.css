@@ -194,3 +194,5 @@ body.modal-open{overflow:hidden}
 .chip.empty{opacity:.4}
 .dstats{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px;padding-top:8px;border-top:2px solid var(--line);font-size:.9rem}
 tbody tr.row.click td.name{text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--muted) 50%,transparent);text-underline-offset:3px}
+.sub.updated{margin-top:2px;font-family:var(--mono);font-size:.8rem}
+.sub.updated:empty{display:none}

@@ -145,6 +145,18 @@
       <div class="dseries-box">${series}</div>${extra}`;
   }
 
+  // "Updated 14:32:05" = time of the latest score change (newest updated_at); adds the date if it is not today.
+  function updatedText(athletes) {
+    let t = 0;
+    for (const a of athletes) { const v = Date.parse(a.updated_at); if (v > t) t = v; }
+    if (!t) return "";
+    const d = new Date(t), loc = L("th-TH", "en-GB"), now = new Date();
+    const time = d.toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+    const today = d.toDateString() === now.toDateString();
+    const day = today ? "" : d.toLocaleDateString(loc, { day: "numeric", month: "short" }) + " ";
+    return L("อัปเดตล่าสุด ", "Updated ") + day + time;
+  }
+
   const getParam = (k) => new URLSearchParams(location.search).get(k);
-  window.Render = { esc, boardHTML, paint, tabsHTML, setLive, subline, getParam, evName, noActiveHTML, detailHTML };
+  window.Render = { esc, boardHTML, paint, tabsHTML, setLive, subline, getParam, evName, noActiveHTML, detailHTML, updatedText };
 })();
