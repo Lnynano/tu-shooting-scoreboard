@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TU Shooting Scoreboard — Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="board">
+<div class="wrap">
+  <header>
+    <div>
+      <h1>TU Shooting <span>Scoreboard</span></h1>
+      <p class="sub" id="subline">ISSF qualification scoring · ผลการแข่งขันสด</p>
+    </div>
+    <div class="status">
+      <span class="live-badge off" id="liveBadge">LIVE</span>
+      <span class="dot" id="liveDot"></span><span id="liveText">กำลังเชื่อมต่อ…</span>
+      <button type="button" id="pauseBtn" class="ghost" aria-pressed="false" title="Space">หยุดสลับ / Pause</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs" aria-label="Categories"></nav>
+  <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+
+  <main>
+    <section class="panel" aria-labelledby="resH">
+      <h2 id="resH"><span id="boardTitle">ผลการแข่งขัน</span> <small id="evInfo"></small></h2>
+      <div class="tablebox"><table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table></div>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/scoring.js"></script>
+<script src="js/render.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const CYCLE_MS = (+Render.getParam("every") || 15) * 1000;
+  let tab = 0, paused = false, state = null, started = Date.now();
+
+  function draw() {
+    const comp = state && state.comp;
+    document.title = (comp ? comp.name + " · " : "") + "TU Shooting Board";
+    $("subline").textContent = Render.subline(comp);
+    const list = state ? state.list() : [];
+    $("tabs").innerHTML = Render.tabsHTML(tab, list);
+    Render.paint(
+      { title: $("boardTitle"), info: $("evInfo"), thead: $("thead"), tbody: $("tbody") },
+      { athletes: list, event: comp ? comp.event : "ap60", teamSize: comp ? comp.team_size : 3, tab, loading: !state || !state.loaded });
+    if (state && state.loaded && !comp)
+      $("tbody").innerHTML = `<tr><td colspan="20" class="empty">ยังไม่มีการแข่งขันที่เปิดแสดงอยู่ · No active competition</td></tr>`;
+  }
+  function go(i) { tab = (i + 4) % 4; started = Date.now(); draw(); }
+  function setPaused(p) {
+    paused = p;
+    $("pauseBtn").setAttribute("aria-pressed", String(p));
+    $("pauseBtn").textContent = p ? "เล่นต่อ / Resume" : "หยุดสลับ / Pause";
+    started = Date.now();
+  }
+  $("pauseBtn").onclick = () => setPaused(!paused);
+  $("tabs").addEventListener("click", (c) => { const b = c.target.closest("[data-t]"); if (b) go(+b.dataset.t); });
+  document.addEventListener("keydown", (k) => {
+    if (k.target.tagName === "BUTTON" && k.key === " ") return;
+    if (k.key === " ") { k.preventDefault(); setPaused(!paused); }
+    else if (k.key === "ArrowRight") go(tab + 1);
+    else if (k.key === "ArrowLeft") go(tab - 1);
+  });
+  setInterval(() => {
+    const el = Date.now() - started;
+    $("bar").style.width = paused ? "100%" : Math.min(100, (el / CYCLE_MS) * 100) + "%";
+    if (!paused && el >= CYCLE_MS) go(tab + 1);
+  }, 200);
+
+  TU.watch({
+    id: Render.getParam("c"),
+    onChange: (s) => { state = s; draw(); },
+    onStatus: (s, m) => {
+      Render.setLive($("liveDot"), $("liveText"), s, m);
+      $("liveBadge").classList.toggle("off", s !== "live");
+    }
+  });
+  draw();
+})();
+</script>
+</body>
+</html>

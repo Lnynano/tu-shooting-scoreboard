@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TU Shooting Scoreboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>TU Shooting <span>Scoreboard</span></h1>
+      <p class="sub" id="subline">ISSF qualification scoring · ผลการแข่งขันสด</p>
+    </div>
+    <div class="status"><span class="dot" id="liveDot"></span><span id="liveText">กำลังเชื่อมต่อ…</span></div>
+  </header>
+
+  <nav class="tabs" id="tabs" aria-label="Categories"></nav>
+
+  <main>
+    <section class="panel" aria-labelledby="resH">
+      <h2 id="resH"><span id="boardTitle">ผลการแข่งขัน</span> <small id="evInfo"></small></h2>
+      <div class="tablebox"><table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table></div>
+    </section>
+  </main>
+
+  <section class="panel rules">
+    <b>Tie-break:</b> คะแนนเต็มหน่วย (pistol / 3P) — รวม → X → ชุดสุดท้ายย้อนหลัง → นัดย้อนหลัง · คะแนนทศนิยม (air rifle) — รวม → ชุดสุดท้ายย้อนหลัง → นัดย้อนหลัง.
+    <b>ทีม / Team:</b> นับคะแนนสมาชิกที่ดีที่สุดตามจำนวนที่กำหนด จัดอันดับด้วยรวม → X · แถวสีจางไม่นับเข้าทีม.
+    <a href="board.html">โหมดจอใหญ่ / Projector</a>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/scoring.js"></script>
+<script src="js/render.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  let tab = 0;
+  try { tab = Math.min(3, Math.max(0, +localStorage.getItem("tu-tab") || 0)); } catch (e) {}
+  let state = null;
+
+  function draw() {
+    const comp = state && state.comp;
+    document.title = comp ? comp.name + " · TU Shooting" : "TU Shooting Scoreboard";
+    $("subline").textContent = Render.subline(comp);
+    const list = state ? state.list() : [];
+    $("tabs").innerHTML = Render.tabsHTML(tab, list);
+    Render.paint(
+      { title: $("boardTitle"), info: $("evInfo"), thead: $("thead"), tbody: $("tbody") },
+      { athletes: list, event: comp ? comp.event : "ap60", teamSize: comp ? comp.team_size : 3, tab, loading: !state || !state.loaded });
+    if (state && state.loaded && !comp)
+      $("tbody").innerHTML = `<tr><td colspan="20" class="empty">ยังไม่มีการแข่งขันที่เปิดแสดงอยู่ · No active competition</td></tr>`;
+  }
+  $("tabs").addEventListener("click", (c) => {
+    const b = c.target.closest("[data-t]");
+    if (!b) return;
+    tab = +b.dataset.t;
+    try { localStorage.setItem("tu-tab", tab); } catch (e) {}
+    draw();
+  });
+  TU.watch({
+    id: Render.getParam("c"),
+    onChange: (s) => { state = s; draw(); },
+    onStatus: (s, m) => Render.setLive($("liveDot"), $("liveText"), s, m)
+  });
+  draw();
+})();
+</script>
+</body>
+</html>
