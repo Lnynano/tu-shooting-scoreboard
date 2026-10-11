@@ -42,6 +42,9 @@
       </table></div>
     </section>
   </main>
+  <div id="detail" class="modal" hidden role="dialog" aria-modal="true" aria-label="Athlete detail">
+    <div class="modal-card"><button type="button" id="detailClose" class="ghost modal-x" aria-label="Close">✕</button><div id="detailBody"></div></div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
@@ -69,9 +72,10 @@
     drawRelays(list);
     const h = Render.paint(
       { title: $("boardTitle"), info: $("evInfo"), thead: $("thead"), tbody: $("tbody") },
-      { athletes: list, event: comp ? comp.event : "ap60", teamSize: comp ? comp.team_size : 3, tab, loading: !state || !state.loaded, filter: F });
+      { athletes: list, event: comp ? comp.event : "ap60", teamSize: comp ? comp.team_size : 3, tab, loading: !state || !state.loaded, filter: F, clickable: true });
     const on = !!(F.q.trim() || F.relay);
     $("clearF").hidden = !on;
+    if (openId) drawDetail();
     $("fCount").textContent = on && h.count.total ? I18n.L(`แสดง ${h.count.shown} จาก ${h.count.total}`, `Showing ${h.count.shown} of ${h.count.total}`) : "";
     if (state && state.loaded && !comp)
       $("tbody").innerHTML = Render.noActiveHTML();
@@ -97,6 +101,21 @@
   $("q").addEventListener("input", () => { clearTimeout(qTimer); qTimer = setTimeout(() => { F.q = $("q").value; syncUrl(); draw(); }, 120); });
   $("relaySel").addEventListener("change", () => { F.relay = $("relaySel").value; syncUrl(); draw(); });
   $("clearF").addEventListener("click", () => { F.q = ""; F.relay = ""; $("q").value = ""; syncUrl(); draw(); });
+  // athlete detail popup (live: refreshes when scores change while it is open)
+  let openId = null;
+  function drawDetail() {
+    const comp = state && state.comp, list = state ? state.list() : [];
+    const a = openId && list.find((x) => x.id === openId);
+    if (!a || !comp) { closeDetail(); return; }
+    $("detailBody").innerHTML = Render.detailHTML(a, list, comp.event);
+  }
+  function openDetail(id) { openId = id; $("detail").hidden = false; document.body.classList.add("modal-open"); drawDetail(); $("detailClose").focus(); }
+  function closeDetail() { openId = null; $("detail").hidden = true; document.body.classList.remove("modal-open"); }
+  $("tbody").addEventListener("click", (c) => { const tr = c.target.closest("tr[data-id]"); if (tr && tr.dataset.id) openDetail(tr.dataset.id); });
+  $("tbody").addEventListener("keydown", (k) => { if (k.key === "Enter") { const tr = k.target.closest("tr[data-id]"); if (tr && tr.dataset.id) openDetail(tr.dataset.id); } });
+  $("detailClose").addEventListener("click", closeDetail);
+  $("detail").addEventListener("click", (e) => { if (e.target === $("detail")) closeDetail(); });
+  document.addEventListener("keydown", (k) => { if (k.key === "Escape" && openId) closeDetail(); });
   $("tabs").addEventListener("click", (c) => {
     const b = c.target.closest("[data-t]");
     if (!b) return;

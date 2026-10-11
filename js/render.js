@@ -105,6 +105,46 @@
     return `${comp.name} · ${evName(comp.event)}`;
   }
 
+  /* Athlete detail card: rank, totals, per-series totals; shot-by-shot only for series entered per shot. */
+  function detailHTML(a, athletes, event) {
+    const e = S.ev(event), n = S.nSer(event), st = S.stats(a, event), cat = a.cat || "W";
+    const me = S.ranked(athletes, cat, event).find((r) => r.a.id === a.id);
+    const rank = me && me.st.any ? me.rank : "–";
+    const fmt = (t) => S.fmtT(t, e.mode);
+    let shotsSeen = 0, tens = 0, xs = 0, sum = 0, best = null;
+    let series = "";
+    for (let k = 0; k < n; k++) {
+      const s = st.ser[k], perShot = s.from === "shots";
+      let body;
+      if (perShot) {
+        const chips = [];
+        for (let j = 0; j < 10 && k * 10 + j < e.shots; j++) {
+          const p = S.parseShot((a.shots || [])[k * 10 + j], e.mode);
+          if (p) {
+            shotsSeen++; sum += p.t; if (p.x) xs++;
+            if (p.t >= 100) tens++;
+            if (best === null || p.t > best) best = p.t;
+            chips.push(`<span class="chip${p.x ? " x" : ""}">${esc(p.norm)}</span>`);
+          } else chips.push(`<span class="chip empty">·</span>`);
+        }
+        body = `<div class="chips">${chips.join("")}</div>`;
+      } else if (s.has) body = `<span class="muted">${L("กรอกเป็นคะแนนรวมชุด — ไม่มีข้อมูลรายนัด", "entered as a series total — no shot detail")}</span>`;
+      else body = `<span class="muted">${L("ยังไม่ได้ยิง", "not shot yet")}</span>`;
+      series += `<div class="dseries"><span class="lab">S${k + 1}</span><div class="dbody">${body}</div><span class="st">${s.has ? fmt(s.t) + (e.mode === "int" || s.x ? `<span class="x">-${s.x}x</span>` : "") : "·"}</span></div>`;
+    }
+    let extra = "";
+    if (shotsSeen) {
+      const avg = (sum / shotsSeen / 10).toFixed(2);
+      extra = `<div class="dstats"><span>${L("นับ 10 ขึ้นไป", "10s")}: <b>${tens}</b></span>${e.mode === "int" ? `<span>X: <b>${xs}</b></span>` : ""}<span>${L("เฉลี่ยต่อนัด", "Average / shot")}: <b>${avg}</b></span><span>${L("ดีที่สุด", "Best")}: <b>${fmt(best)}</b></span><span class="muted">(${shotsSeen} ${L("นัดที่มีรายละเอียด", "shots with detail")})</span></div>`;
+    } else if (st.any) {
+      extra = `<p class="muted">${L("ผลของนักกีฬาคนนี้กรอกเป็นคะแนนรวมชุด จึงไม่มีรายละเอียดรายนัด", "This athlete's scores were entered as series totals, so there is no shot-by-shot detail.")}</p>`;
+    }
+    return `<div class="dhead"><div class="drank">${rank}</div><div><div class="dname">${esc(a.name)}</div>
+      <div class="muted">${esc(a.uni || "")}${a.relay ? ` · ${L("ผลัด", "Relay")} ${esc(a.relay)}` : ""}${a.lane ? ` · ${L("ลู่", "Lane")} ${esc(a.lane)}` : ""}</div></div>
+      <div class="dtotal">${st.any ? fmt(st.total) : "–"}${st.any && (e.mode === "int" || st.x) ? `<span class="x">-${st.x}X</span>` : ""}<small>${st.count}/${e.shots} ${L("นัด", "shots")}</small></div></div>
+      <div class="dseries-box">${series}</div>${extra}`;
+  }
+
   const getParam = (k) => new URLSearchParams(location.search).get(k);
-  window.Render = { esc, boardHTML, paint, tabsHTML, setLive, subline, getParam, evName, noActiveHTML };
+  window.Render = { esc, boardHTML, paint, tabsHTML, setLive, subline, getParam, evName, noActiveHTML, detailHTML };
 })();
