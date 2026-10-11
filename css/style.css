@@ -171,3 +171,5 @@ label.chk{display:inline-flex;gap:6px;align-items:center;font-size:.85rem}
 .filters .grow{flex:1 1 220px}
 .filters input[type=search]{width:100%;font:inherit;font-size:.95rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:7px 10px}
 .plink{margin-left:auto;font-size:.88rem;white-space:nowrap}
+.sub.updated{margin-top:2px;font-family:var(--mono);font-size:.8rem}
+.sub.updated:empty{display:none}
