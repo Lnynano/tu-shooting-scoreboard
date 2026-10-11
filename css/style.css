@@ -126,3 +126,6 @@ body.board td.rank,body.board td.tt{font-size:clamp(1.3rem,2vw,2.6rem)}
 .live-badge.off{background:var(--muted)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .theme-btn{white-space:nowrap}
+.lang-btn{white-space:nowrap;font-weight:600}
+html[lang="en"] .l-th{display:none}
+html:not([lang="en"]) .l-en{display:none}

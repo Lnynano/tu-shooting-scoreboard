@@ -16,8 +16,9 @@
     b.type = "button"; b.className = "ghost theme-btn";
     const paint = () => {
       const d = isDark();
-      b.textContent = d ? "☀ สว่าง" : "☾ มืด";
-      b.setAttribute("aria-label", d ? "สลับเป็นโหมดสว่าง (Light mode)" : "สลับเป็นโหมดมืด (Dark mode)");
+      const L = window.I18n ? window.I18n.L : (th) => th;
+      b.textContent = d ? L("☀ สว่าง", "☀ Light") : L("☾ มืด", "☾ Dark");
+      b.setAttribute("aria-label", d ? L("สลับเป็นโหมดสว่าง (Light mode)", "Switch to light mode") : L("สลับเป็นโหมดมืด (Dark mode)", "Switch to dark mode"));
     };
     b.onclick = () => {
       const next = isDark() ? "light" : "dark";
@@ -28,6 +29,7 @@
     paint();
     host.insertBefore(b, host.firstChild);
     if (mq && mq.addEventListener) mq.addEventListener("change", paint);
+    if (window.I18n) window.I18n.onChange(paint);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();

@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <link rel="stylesheet" href="css/style.css">
 <script src="js/theme.js"></script>
+<script src="js/i18n.js"></script>
 </head>
 <body class="board">
 <div class="wrap">
@@ -19,8 +20,8 @@
     </div>
     <div class="status">
       <span class="live-badge off" id="liveBadge">LIVE</span>
-      <span class="dot" id="liveDot"></span><span id="liveText">กำลังเชื่อมต่อ…</span>
-      <button type="button" id="pauseBtn" class="ghost" aria-pressed="false" title="Space">หยุดสลับ / Pause</button>
+      <span class="dot" id="liveDot"></span><span id="liveText">…</span>
+      <button type="button" id="pauseBtn" class="ghost" aria-pressed="false" title="Space"></button>
     </div>
   </header>
 
@@ -59,15 +60,16 @@
       { title: $("boardTitle"), info: $("evInfo"), thead: $("thead"), tbody: $("tbody") },
       { athletes: list, event: comp ? comp.event : "ap60", teamSize: comp ? comp.team_size : 3, tab, loading: !state || !state.loaded });
     if (state && state.loaded && !comp)
-      $("tbody").innerHTML = `<tr><td colspan="20" class="empty">ยังไม่มีการแข่งขันที่เปิดแสดงอยู่ · No active competition</td></tr>`;
+      $("tbody").innerHTML = Render.noActiveHTML();
   }
   function go(i) { tab = (i + 4) % 4; started = Date.now(); draw(); }
   function setPaused(p) {
     paused = p;
     $("pauseBtn").setAttribute("aria-pressed", String(p));
-    $("pauseBtn").textContent = p ? "เล่นต่อ / Resume" : "หยุดสลับ / Pause";
+    paintPause();
     started = Date.now();
   }
+  function paintPause() { $("pauseBtn").textContent = paused ? I18n.L("เล่นต่อ / Resume", "Resume") : I18n.L("หยุดสลับ / Pause", "Pause"); }
   $("pauseBtn").onclick = () => setPaused(!paused);
   $("tabs").addEventListener("click", (c) => { const b = c.target.closest("[data-t]"); if (b) go(+b.dataset.t); });
   document.addEventListener("keydown", (k) => {
@@ -82,14 +84,18 @@
     if (!paused && el >= CYCLE_MS) go(tab + 1);
   }, 200);
 
+  let live = ["connecting"];
+  const paintLive = () => {
+    Render.setLive($("liveDot"), $("liveText"), live[0], live[1]);
+    $("liveBadge").classList.toggle("off", live[0] !== "live");
+  };
   TU.watch({
     id: Render.getParam("c"),
     onChange: (s) => { state = s; draw(); },
-    onStatus: (s, m) => {
-      Render.setLive($("liveDot"), $("liveText"), s, m);
-      $("liveBadge").classList.toggle("off", s !== "live");
-    }
+    onStatus: (s, m) => { live = [s, m]; paintLive(); }
   });
+  I18n.onChange(() => { draw(); paintLive(); paintPause(); });
+  paintLive(); paintPause();
   draw();
 })();
 </script>

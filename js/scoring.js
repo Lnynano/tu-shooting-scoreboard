@@ -5,14 +5,14 @@
   "use strict";
 
   const EVENTS = {
-    ap60: { name: "10m Air Pistol — 60 นัด", shots: 60, mode: "int" },
-    ar60: { name: "10m Air Rifle — 60 นัด", shots: 60, mode: "dec" },
-    ap40: { name: "10m Air Pistol — 40 นัด", shots: 40, mode: "int" },
-    ar40: { name: "10m Air Rifle — 40 นัด", shots: 40, mode: "dec" },
-    ap30: { name: "10m Air Pistol — 30 นัด (ซ้อม)", shots: 30, mode: "int" },
-    ar30: { name: "10m Air Rifle — 30 นัด (ซ้อม)", shots: 30, mode: "dec" },
-    r3p60: { name: "50m Rifle 3 Positions — 60 นัด", shots: 60, mode: "int" },
-    p25: { name: "25m Pistol — 60 นัด", shots: 60, mode: "int" }
+    ap60: { name: "10m Air Pistol — 60 นัด", nameEn: "10m Air Pistol — 60 shots", shots: 60, mode: "int" },
+    ar60: { name: "10m Air Rifle — 60 นัด", nameEn: "10m Air Rifle — 60 shots", shots: 60, mode: "dec" },
+    ap40: { name: "10m Air Pistol — 40 นัด", nameEn: "10m Air Pistol — 40 shots", shots: 40, mode: "int" },
+    ar40: { name: "10m Air Rifle — 40 นัด", nameEn: "10m Air Rifle — 40 shots", shots: 40, mode: "dec" },
+    ap30: { name: "10m Air Pistol — 30 นัด (ซ้อม)", nameEn: "10m Air Pistol — 30 shots (practice)", shots: 30, mode: "int" },
+    ar30: { name: "10m Air Rifle — 30 นัด (ซ้อม)", nameEn: "10m Air Rifle — 30 shots (practice)", shots: 30, mode: "dec" },
+    r3p60: { name: "50m Rifle 3 Positions — 60 นัด", nameEn: "50m Rifle 3 Positions — 60 shots", shots: 60, mode: "int" },
+    p25: { name: "25m Pistol — 60 นัด", nameEn: "25m Pistol — 60 shots", shots: 60, mode: "int" }
   };
   const TABS = [
     ["W", "ind", "บุคคลหญิง", "Women"],

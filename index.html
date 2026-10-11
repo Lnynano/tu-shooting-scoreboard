@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <link rel="stylesheet" href="css/style.css">
 <script src="js/theme.js"></script>
+<script src="js/i18n.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -17,7 +18,7 @@
       <h1>TU Shooting <span>Scoreboard</span></h1>
       <p class="sub" id="subline">ISSF qualification scoring · ผลการแข่งขันสด</p>
     </div>
-    <div class="status"><span class="dot" id="liveDot"></span><span id="liveText">กำลังเชื่อมต่อ…</span></div>
+    <div class="status"><span class="dot" id="liveDot"></span><span id="liveText">…</span></div>
   </header>
 
   <nav class="tabs" id="tabs" aria-label="Categories"></nav>
@@ -33,9 +34,12 @@
   </main>
 
   <section class="panel rules">
-    <b>Tie-break:</b> คะแนนเต็มหน่วย (pistol / 3P) — รวม → X → ชุดสุดท้ายย้อนหลัง → นัดย้อนหลัง · คะแนนทศนิยม (air rifle) — รวม → ชุดสุดท้ายย้อนหลัง → นัดย้อนหลัง.
+    <span class="l-th"><b>Tie-break:</b> คะแนนเต็มหน่วย (pistol / 3P) — รวม → X → ชุดสุดท้ายย้อนหลัง → นัดย้อนหลัง · คะแนนทศนิยม (air rifle) — รวม → ชุดสุดท้ายย้อนหลัง → นัดย้อนหลัง.
     <b>ทีม / Team:</b> นับคะแนนสมาชิกที่ดีที่สุดตามจำนวนที่กำหนด จัดอันดับด้วยรวม → X · แถวสีจางไม่นับเข้าทีม.
-    <a href="board.html">โหมดจอใหญ่ / Projector</a>
+    <a href="board.html">โหมดจอใหญ่ / Projector</a></span>
+    <span class="l-en"><b>Tie-break:</b> integer events (pistol / 3P) — total → X count → last series backwards → last shot backwards · decimal events (air rifle) — total → last series backwards → last shot backwards.
+    <b>Team:</b> best N members count (N set per competition); teams are ranked by total, then X · faded rows do not count.
+    <a href="board.html">Projector view</a></span>
   </section>
 </div>
 
@@ -61,7 +65,7 @@
       { title: $("boardTitle"), info: $("evInfo"), thead: $("thead"), tbody: $("tbody") },
       { athletes: list, event: comp ? comp.event : "ap60", teamSize: comp ? comp.team_size : 3, tab, loading: !state || !state.loaded });
     if (state && state.loaded && !comp)
-      $("tbody").innerHTML = `<tr><td colspan="20" class="empty">ยังไม่มีการแข่งขันที่เปิดแสดงอยู่ · No active competition</td></tr>`;
+      $("tbody").innerHTML = Render.noActiveHTML();
   }
   $("tabs").addEventListener("click", (c) => {
     const b = c.target.closest("[data-t]");
@@ -70,11 +74,15 @@
     try { localStorage.setItem("tu-tab", tab); } catch (e) {}
     draw();
   });
+  let live = ["connecting"];
+  const paintLive = () => Render.setLive($("liveDot"), $("liveText"), live[0], live[1]);
   TU.watch({
     id: Render.getParam("c"),
     onChange: (s) => { state = s; draw(); },
-    onStatus: (s, m) => Render.setLive($("liveDot"), $("liveText"), s, m)
+    onStatus: (s, m) => { live = [s, m]; paintLive(); }
   });
+  I18n.onChange(() => { draw(); paintLive(); });
+  paintLive();
   draw();
 })();
 </script>
