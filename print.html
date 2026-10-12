@@ -7,6 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="img/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<meta name="theme-color" content="#c8102e">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/print.css">
 <script src="js/i18n.js"></script>
@@ -15,6 +19,7 @@
 <div class="wrap">
   <header class="noprint">
     <div>
+      <img class="logo" src="img/logo.svg" alt="TU Shooting Club" width="56" height="56">
       <h1>TU Shooting <span>Results</span></h1>
       <p class="sub"><span class="l-th">ใบสรุปผลสำหรับพิมพ์</span><span class="l-en">Printable results sheet</span></p>
     </div>
@@ -53,6 +58,7 @@
     const list = state.list();
     const now = new Date().toLocaleString(L("th-TH", "en-GB"), { dateStyle: "long", timeStyle: "short" });
     let html = `<div class="sheet-head">
+      <img class="plogo" src="img/logo.svg" alt="" width="64" height="64">
       <div class="org">TU Shooting Club</div>
       <h1 class="ttl">${esc(comp.name)}</h1>
       <div class="evl">${esc(Render.evName(comp.event))} · ${L(`ทีม: นับ ${comp.team_size} คนที่ดีที่สุด`, `Teams: best ${comp.team_size} count`)}</div>

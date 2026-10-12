@@ -56,3 +56,6 @@ label.chk{display:inline-flex;gap:6px;align-items:center;font-size:.85rem;color:
   .p-sub{font-size:14pt}
 }
 .p-title span{color:#000}
+/* logo on the printed sheet and the poster */
+.plogo{display:block;margin:0 auto 4px;width:18mm;height:18mm}
+.plogo.big{width:34mm;height:34mm;margin-bottom:6px}
