@@ -211,11 +211,12 @@
   }
   function renderMeta() {
     const c = comp();
-    for (const id of ["compName", "event", "teamSize", "activeBtn", "delCompBtn", "importBtn", "copyBtn", "histBtn", "printBtn2", "xlsxBtn"]) $(id).disabled = !c;
+    for (const id of ["compName", "event", "teamSize", "activeBtn", "delCompBtn", "importBtn", "copyBtn", "histBtn", "printBtn2", "xlsxBtn", "nowSel"]) $(id).disabled = !c;
     $("addForm").hidden = !c;
     if (!c) { $("subline").textContent = L("สร้างการแข่งขันก่อน · Create a competition to begin", "Create a competition to begin"); $("links").innerHTML = ""; $("activeBadge").hidden = true; return; }
     $("event").value = c.event;
     $("teamSize").value = String(Math.min(4, Math.max(2, c.team_size)));
+    drawNowSel(c);
     if (document.activeElement !== $("compName")) $("compName").value = c.name;
     $("subline").textContent = `${c.name} · ${Render.evName(evKey())}`;
     $("activeBtn").hidden = c.is_active;
@@ -243,6 +244,16 @@
     nameTimer = setTimeout(() => { if (v) patchComp({ name: v }); }, 400);
     if (comp() && v) { comp().name = v; $("subline").textContent = `${v} · ${Render.evName(evKey())}`; renderCompSel(); }
   });
+  // "Now shooting": pick the relay that is on the line; the public page and the board highlight it
+  function drawNowSel(c) {
+    const sel = $("nowSel"), cur = c.current_relay || "";
+    const relays = [...new Set([...athletes().values()].map((a) => String(a.relay || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    if (cur && !relays.includes(cur)) relays.push(cur);
+    const html = `<option value="">${L("— ไม่ระบุ —", "— none —")}</option>` + relays.map((r) => `<option value="${esc(r)}">${L("ผลัด ", "Relay ")}${esc(r)}</option>`).join("");
+    if (sel.dataset.html !== html) { sel.innerHTML = html; sel.dataset.html = html; }
+    sel.value = cur;
+  }
+  $("nowSel").addEventListener("change", () => { patchComp({ current_relay: $("nowSel").value }); renderBoard(); });
   $("teamSize").addEventListener("change", () => { patchComp({ team_size: +$("teamSize").value }); renderBoard(); });
   $("delCompBtn").onclick = () => {
     const c = comp(); if (!c) return;
@@ -301,7 +312,7 @@
     const s = state();
     Render.paint(
       { title: $("boardTitle"), info: $("evInfo"), thead: $("thead"), tbody: $("tbody") },
-      { athletes: [...athletes().values()], event: evKey(), teamSize: teamSize(), tab: UI.tab, selectedId: UI.sel, clickable: true,
+      { athletes: [...athletes().values()], event: evKey(), teamSize: teamSize(), nowRelay: comp() ? comp().current_relay || "" : "", tab: UI.tab, selectedId: UI.sel, clickable: true,
         loading: W && !(s && s.loaded),
         emptyHint: comp() ? L("เพิ่มชื่อด้านล่าง หรือกด <b>วางจาก Excel</b> เพื่อนำเข้าทั้งรายชื่อ", "Add names below, or press <b>Paste from Excel</b> to import the whole list") : "" });
     if (!comp() && !(W && !(s && s.loaded))) $("tbody").innerHTML = `<tr><td colspan="20" class="empty">${L("ยังไม่มีการแข่งขัน — กด “+ สร้างการแข่งขัน”", "No competition yet — press “+ New competition”")}</td></tr>`;

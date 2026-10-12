@@ -43,7 +43,7 @@
     for (let i = 1; i <= n; i++) thead += `<th>S${i}</th>`;
     thead += `<th>${L("รวม<small>Total</small>", "Total")}</th>${kind === "team" ? `<th>${L("ทีม<small>Team</small>", "Team")}</th>` : `<th>${L("นัด<small>Shots</small>", "Shots")}</th>`}</tr>`;
 
-    const row = (r, rankCell, extra, cls = "") => `<tr class="row ${opts.clickable ? "click " : ""}${cls} ${r.a.id === opts.selectedId ? "sel" : ""}" data-id="${esc(r.a.id)}"${opts.clickable ? ' tabindex="0"' : ""}>
+    const row = (r, rankCell, extra, cls = "") => `<tr class="row ${opts.clickable ? "click " : ""}${cls} ${r.a.id === opts.selectedId ? "sel" : ""} ${opts.nowRelay && String(r.a.relay || "") === opts.nowRelay ? "now" : ""}" data-id="${esc(r.a.id)}"${opts.clickable ? ' tabindex="0"' : ""}>
       <td class="rank">${rankCell}</td><td class="l">${esc(r.a.relay || "")}</td><td class="l">${esc(r.a.lane || "")}</td>
       <td class="uni">${esc(r.a.uni || "")}</td>
       <td class="name">${esc(r.a.name)}${r.st.count === e.shots ? `<span class="pill done">${L("ครบ", "Done")}</span>` : ""}</td>
@@ -157,6 +157,9 @@
     return L("อัปเดตล่าสุด ", "Updated ") + day + time;
   }
 
+  // "Now shooting: Relay 2" (empty when no relay is marked)
+  const nowText = (comp) => (comp && comp.current_relay ? L("● กำลังยิง: ผลัด ", "● Now shooting: Relay ") + comp.current_relay : "");
+
   const getParam = (k) => new URLSearchParams(location.search).get(k);
-  window.Render = { esc, boardHTML, paint, tabsHTML, setLive, subline, getParam, evName, noActiveHTML, detailHTML, updatedText };
+  window.Render = { esc, boardHTML, paint, tabsHTML, setLive, subline, getParam, evName, noActiveHTML, detailHTML, updatedText, nowText };
 })();
