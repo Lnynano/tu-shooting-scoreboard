@@ -215,3 +215,9 @@ tbody tr.row.click td.name{text-decoration:underline;text-decoration-color:color
 .btnlink.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btnlink:hover{border-color:var(--ink)}
 .comp .tag{display:inline-block;vertical-align:middle;white-space:nowrap}
+/* "now shooting" relay */
+tbody tr.row.now td{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+tbody tr.row.now td:first-child{box-shadow:inset 5px 0 0 var(--accent)}
+.nowbadge{margin:4px 0 0;display:inline-block;font-weight:600;font-size:.85rem;background:#fff;color:#c8102e;border-radius:99px;padding:2px 12px}
+.nowbadge[hidden]{display:none}
+body.board .nowbadge{font-size:clamp(.9rem,1.4vw,1.6rem)}
