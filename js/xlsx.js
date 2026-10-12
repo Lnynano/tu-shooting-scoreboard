@@ -92,7 +92,7 @@
     const sheets = [];
     sheets.push({
       name: L("ข้อมูล", "Info"), widths: [26, 60], rows: [
-        [{ v: "TU Shooting Club", s: S_TITLE }],
+        [{ v: "Thammasat Shooting Club", s: S_TITLE }],
         [L("การแข่งขัน", "Competition"), { v: comp.name, s: S_BOLD }],
         [L("รายการ", "Event"), L(e.name, e.nameEn)],
         [L("นับทีม", "Team counts"), L(`สมาชิกที่ดีที่สุด ${comp.team_size} คน`, `Best ${comp.team_size} members`)],
