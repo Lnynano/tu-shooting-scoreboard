@@ -33,6 +33,7 @@
       <h1>TU Shooting <span>Scoreboard</span></h1>
       <p class="sub" id="subline">ISSF qualification scoring · ผลการแข่งขันสด</p>
       <p class="sub updated" id="updated"></p>
+      <p class="nowbadge" id="now" hidden></p>
     </div>
     <div class="status"><a class="hdr-link" href="results.html"><span class="l-th">ผลย้อนหลัง</span><span class="l-en">Past results</span></a><a class="hdr-link" id="boardLink" href="board.html"><span class="l-th">จอใหญ่</span><span class="l-en">Projector</span></a><span class="dot" id="liveDot"></span><span id="liveText">…</span></div>
   </header>
@@ -87,11 +88,12 @@
     $("subline").textContent = Render.subline(comp);
     const list = state ? state.list() : [];
     $("updated").textContent = comp ? Render.updatedText(list) : "";
+    $("now").textContent = Render.nowText(comp); $("now").hidden = !$("now").textContent;
     $("tabs").innerHTML = Render.tabsHTML(tab, list);
     drawRelays(list);
     const h = Render.paint(
       { title: $("boardTitle"), info: $("evInfo"), thead: $("thead"), tbody: $("tbody") },
-      { athletes: list, event: comp ? comp.event : "ap60", teamSize: comp ? comp.team_size : 3, tab, loading: !state || !state.loaded, filter: F, clickable: true });
+      { athletes: list, event: comp ? comp.event : "ap60", teamSize: comp ? comp.team_size : 3, nowRelay: comp ? comp.current_relay : "", tab, loading: !state || !state.loaded, filter: F, clickable: true });
     const on = !!(F.q.trim() || F.relay);
     $("clearF").hidden = !on;
     if (openId) drawDetail();

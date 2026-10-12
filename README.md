@@ -28,15 +28,15 @@ Every page has a **Thai / English** switch and a **light / dark** button (rememb
 | `js/i18n.js`, `js/theme.js`              | สลับภาษา / สว่าง-มืด                                                           |
 | `js/xlsx.js`                             | สร้างไฟล์ Excel (.xlsx) ในเบราว์เซอร์ ไม่ใช้ไลบรารีภายนอก                       |
 | `css/style.css`, `css/print.css`         | หน้าตา (แดง-ขาว สว่าง / แดง-ดำ มืด) และหน้าพิมพ์                                |
-| `supabase/migrations/*.sql`              | โครงสร้างฐานข้อมูล 001–005 (รันตามลำดับ)                                       |
+| `supabase/migrations/*.sql`              | โครงสร้างฐานข้อมูล 001–006 (รันตามลำดับ)                                       |
 | `templates/athlete-import-template.xlsx` | เทมเพลต Excel สำหรับนำเข้ารายชื่อ                                              |
 | `tests/scoring.test.js`, `prototype/`    | ทดสอบ logic เทียบกับต้นแบบเดิม                                                  |
 
 ## ตั้งค่า Supabase / Supabase setup
 
 1. รัน migration ตามลำดับใน SQL Editor (หรือผ่าน Supabase MCP / CLI):
-   `001_init.sql` ตาราง + RLS + realtime · `002_harden.sql` · `003_set_active.sql` ตั้งรายการที่แสดงทีละหนึ่ง · `004_patch_athlete.sql` บันทึกแบบแก้เฉพาะจุด (สองคนกรอกพร้อมกันไม่ทับกัน) · `005_athlete_log.sql` ประวัติการแก้ไข
-   Run the migrations in order (001 → 005).
+   `001_init.sql` ตาราง + RLS + realtime · `002_harden.sql` · `003_set_active.sql` ตั้งรายการที่แสดงทีละหนึ่ง · `004_patch_athlete.sql` บันทึกแบบแก้เฉพาะจุด (สองคนกรอกพร้อมกันไม่ทับกัน) · `005_athlete_log.sql` ประวัติการแก้ไข · `006_current_relay.sql` ผลัดที่กำลังยิง
+   Run the migrations in order (001 → 006).
 2. ทุกคนอ่านได้ (anon `SELECT`) แต่เขียนได้เฉพาะคนที่อยู่ในตาราง `staff` (RLS + `is_staff()`). ประวัติ (`athlete_log`) อ่านได้เฉพาะ staff และเขียนผ่าน trigger เท่านั้น
    Everyone can read the scoreboard; only users in `staff` can write; the history table is staff-read-only and written only by a trigger.
 3. แนะนำ: Dashboard → Authentication → Sign In / Providers → ปิด _Allow new users to sign up_ และเปิด _Leaked password protection_ (ถ้าแพ็กเกจรองรับ)
@@ -73,6 +73,8 @@ A signed-in user who is not in `staff` sees “not allowed” and cannot write.
 - **ทีละนัด**: 0–10 หรือ X (ปืนสั้น), 0.0–10.9 (ปืนยาว) · Enter/Backspace เลื่อนช่อง · ชุดที่กรอกทีละนัดจะใช้ค่าทีละนัดแทนค่ารวมชุด
 - **แป้นกดบนจอ (มือถือ/แท็บเล็ต)**: เปิดอัตโนมัติบนหน้าจอสัมผัส หรือกดปุ่ม ⌨ — ปืนสั้น 1 แตะ/นัด (0–10, X); ปืนยาว 2 แตะ/นัด (จำนวนเต็ม แล้วทศนิยม); ช่องรวมชุดมีปุ่ม `- x ⌫` และ **ถัดไป ▸** · แตะช่องที่มีค่าแล้วกดปุ่มแรกจะ _แทนที่_ ค่าเดิม
 - บันทึกอัตโนมัติ ~0.4 วินาที สถานะที่มุมขวา (“✓ บันทึกแล้ว”) ถ้าผิดพลาดจะมีปุ่ม **ลองบันทึกใหม่** · สองคนแก้นักกีฬาคนเดียวกันพร้อมกันได้ ระบบบันทึกเฉพาะที่แก้ จึงไม่ทับกัน
+
+**กำลังยิง / Now shooting** — เลือก “กำลังยิง” ที่แถบด้านบนของหน้า staff (รายชื่อผลัดมาจากนักกีฬาในรายการ) หน้าสาธารณะและจอใหญ่จะไฮไลต์แถวของผลัดนั้นและมีป้าย “● กำลังยิง: ผลัด N” — เลือก “— ไม่ระบุ —” เพื่อปิด
 
 **ประวัติการแก้ไข / History** — ปุ่ม **ประวัติการแก้ไข** แสดงใคร แก้อะไร เมื่อไร (150 รายการล่าสุด, กรองเฉพาะนักกีฬาที่เลือกได้)
 

@@ -33,6 +33,7 @@
       <h1>TU Shooting <span>Scoreboard</span></h1>
       <p class="sub" id="subline">ISSF qualification scoring · ผลการแข่งขันสด</p>
       <p class="sub updated" id="updated"></p>
+      <p class="nowbadge" id="now" hidden></p>
     </div>
     <div class="qrbox" id="qrBox" hidden>
       <div class="qrimg" id="qrSvg"></div>
@@ -78,10 +79,11 @@
     $("subline").textContent = Render.subline(comp);
     const list = state ? state.list() : [];
     $("updated").textContent = comp ? Render.updatedText(list) : "";
+    $("now").textContent = Render.nowText(comp); $("now").hidden = !$("now").textContent;
     $("tabs").innerHTML = Render.tabsHTML(tab, list);
     Render.paint(
       { title: $("boardTitle"), info: $("evInfo"), thead: $("thead"), tbody: $("tbody") },
-      { athletes: list, event: comp ? comp.event : "ap60", teamSize: comp ? comp.team_size : 3, tab, loading: !state || !state.loaded });
+      { athletes: list, event: comp ? comp.event : "ap60", teamSize: comp ? comp.team_size : 3, nowRelay: comp ? comp.current_relay : "", tab, loading: !state || !state.loaded });
     if (state && state.loaded && !comp)
       $("tbody").innerHTML = Render.noActiveHTML();
   }
