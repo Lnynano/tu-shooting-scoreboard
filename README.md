@@ -97,6 +97,14 @@ A signed-in user who is not in `staff` sees “not allowed” and cannot write.
 - **ชื่อสังกัดเทียบแบบไม่สนตัวพิมพ์ใหญ่-เล็กและช่องว่างเกิน** (`TU`, `tu`, ` TU ` = ทีมเดียวกัน; แสดงด้วยการสะกดที่พบมากที่สุด) แต่ `T U` หรือ `T.U.` คือทีมอื่น — ควรสะกดให้เหมือนกัน
   Team names match ignoring case and extra spaces; `T U` / `T.U.` are different teams — spell them consistently.
 
+## โลโก้ ไอคอน และภาพตัวอย่างเมื่อแชร์ลิงก์ / Branding and share preview
+
+- ไฟล์อยู่ในโฟลเดอร์ `img/`: `logo.svg` (โลโก้ในหัวทุกหน้า, ใบพิมพ์, โปสเตอร์ QR และไอคอนแท็บ `favicon.svg`), `favicon-32.png`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, และ `og-image.png` (1200×630 ภาพที่ LINE/Facebook แสดงตอนแชร์ลิงก์; ต้นฉบับ `og-source.html`)
+- **เปลี่ยนเป็นโลโก้ TU จริง**: แทนที่ `img/logo.svg` และ `img/favicon.svg` ด้วยไฟล์โลโก้ (ควรเป็นรูปจัตุรัสหรือวงกลม) แล้วสร้าง `favicon-32.png`, `apple-touch-icon.png` และ `og-image.png` ใหม่ให้ตรงกัน
+- ภาพตัวอย่างเป็นแบบเดียวกันทุกครั้ง (เว็บ static ทำภาพแยกตามการแข่งขันไม่ได้) แท็กอยู่ใน `<head>` ของ `index.html`, `board.html`, `results.html` — ที่อยู่ในแท็ก `og:url`/`og:image` เขียนเป็นที่อยู่ GitHub Pages ปัจจุบัน **ถ้าย้ายไปโดเมนของตัวเอง ต้องแก้ที่อยู่เหล่านี้**
+- LINE/Facebook จดจำภาพตัวอย่างไว้ (cache): ถ้าเปลี่ยนภาพแล้วยังเห็นของเดิม ให้ใช้ Facebook Sharing Debugger กด “Scrape Again” หรือรอสักพัก
+  Replace `img/logo.svg` / `favicon.svg` with the real logo and regenerate the PNGs; update the absolute URLs in the share tags if you move to a custom domain.
+
 ## รันในเครื่อง / Run locally
 
 ```bash
