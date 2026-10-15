@@ -56,10 +56,9 @@
       const cid = S.comp.id;
       stA = "connecting";
       chA = sb.channel("ath-" + cid + "-" + Math.random().toString(36).slice(2, 7))
-        .on("postgres_changes", { event: "*", schema: "public", table: "athletes", filter: "competition_id=eq." + cid }, (p) => {
-          if (p.eventType === "DELETE") S.athletes.delete(p.old.id);
-          else S.athletes.set(p.new.id, tf(p.new));
-          emit();
+        // no server-side filter: DELETE events are not delivered on a filtered subscription (see js/athlete-events.js)
+        .on("postgres_changes", { event: "*", schema: "public", table: "athletes" }, (p) => {
+          if (AthleteEvents.applyAthleteEvent(S.athletes, p, cid, tf)) emit();
         })
         .subscribe((s) => { stA = s; recompute(); if (s === "SUBSCRIBED" && S.loaded) refresh(); });
     }

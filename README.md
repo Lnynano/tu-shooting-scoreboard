@@ -26,6 +26,7 @@ Every page has a **Thai / English** switch and a **light / dark** button (rememb
 | `js/render.js`                           | ตารางผลที่ใช้ร่วมกันทุกหน้า + การ์ดรายละเอียดนักกีฬา + เวลาอัปเดต               |
 | `js/staff.js`                            | หน้า staff ทั้งหมด (ล็อกอิน, กรอกคะแนน, แป้นกดบนจอ, ประวัติ, import)            |
 | `js/i18n.js`, `js/theme.js`              | สลับภาษา / สว่าง-มืด                                                           |
+| `js/vendor/supabase.js`                  | supabase-js 2.49.4 (MIT) เก็บไว้ในโปรเจกต์ ไม่โหลดจาก CDN — หน้าเว็บเปิดได้แม้ CDN ถูกบล็อกที่สนาม |
 | `js/xlsx.js`                             | สร้างไฟล์ Excel (.xlsx) ในเบราว์เซอร์ ไม่ใช้ไลบรารีภายนอก                       |
 | `css/style.css`, `css/print.css`         | หน้าตา (แดง-ขาว สว่าง / แดง-ดำ มืด) และหน้าพิมพ์                                |
 | `supabase/migrations/*.sql`              | โครงสร้างฐานข้อมูล 001–006 (รันตามลำดับ)                                       |
@@ -120,6 +121,11 @@ npx serve .
 ```bash
 node tests/scoring.test.js
 node tests/xlsx.test.js
+node tests/render.test.js          # ข้อความอันตรายถูก escape (XSS)
+node tests/import.test.js          # อ่านข้อมูลที่วางจาก Excel
+node tests/patch.test.js           # ตัวช่วยบันทึก (สองคนกรอกพร้อมกันไม่ทับกัน)
+node tests/athlete-events.test.js  # Realtime รวมถึงการลบนักกีฬา
+node tests/anon-security.test.js   # ต่อ API จริง: ผู้ชมทั่วไปอ่านผลได้อย่างเดียว (SKIP_NETWORK_TESTS=1 เพื่อข้าม)
 ```
 
 เทียบ `js/scoring.js` กับ logic ของ `prototype/issf-scorer.html` (อ่านคะแนน, อันดับ, tie-break, ทีม — ข้อมูลสุ่ม ~9,700 รายการ) และมีเคสทีม/ชื่อสังกัดเพิ่ม

@@ -73,25 +73,13 @@
   window.addEventListener("beforeunload", (e) => { if (dirtyCount() || inflight) { e.preventDefault(); e.returnValue = ""; } });
 
   /* ---------- athlete saves (debounced per athlete, patch-based) ---------- */
-  const emptyPatch = () => ({ fields: {}, shots: {}, ser: {} });
-  const mergePatch = (base, add) => ({
-    fields: { ...base.fields, ...add.fields }, shots: { ...base.shots, ...add.shots }, ser: { ...base.ser, ...add.ser }
-  });
+  // save helpers (queue / requeue / overlay) are pure functions in js/patch.js
   // Put not-yet-confirmed local edits on top of a row from the server (used for realtime updates and save results).
-  function overlay(row) {
-    const o = { ...row, shots: Array.from(row.shots || [], (v) => v || ""), ser: Array.from(row.ser || [], (v) => v || "") };
-    for (const patch of [sending.get(row.id), pending.get(row.id)]) {
-      if (!patch) continue;
-      Object.assign(o, patch.fields);
-      for (const [i, v] of Object.entries(patch.shots)) { while (o.shots.length <= +i) o.shots.push(""); o.shots[+i] = v; }
-      for (const [k, v] of Object.entries(patch.ser)) { while (o.ser.length <= +k) o.ser.push(""); o.ser[+k] = v; }
-    }
-    return o;
-  }
+  const overlay = (row) => Patch.overlay(row, [sending.get(row.id), pending.get(row.id)]);
 
   // part: {fields:{k:v}} | {shots:{i:v}} | {ser:{k:v}}
   function queueSave(id, part, delay = 400) {
-    pending.set(id, mergePatch(pending.get(id) || emptyPatch(), { ...emptyPatch(), ...part }));
+    pending.set(id, Patch.queue(pending.get(id), part));
     clearTimeout(timers.get(id));
     timers.set(id, setTimeout(() => flush(id), delay));
     setSave();
@@ -107,7 +95,7 @@
       sending.delete(id);
       if (!res) {
         if (/not found/i.test(errMsg)) { errMsg = L("นักกีฬานี้ถูกลบไปแล้วหรือไม่มีสิทธิ์แก้ไข", "This athlete was deleted or you have no permission"); return; }
-        pending.set(id, mergePatch(patch, pending.get(id) || emptyPatch())); // keep for retry; newer edits win
+        pending.set(id, Patch.requeue(patch, pending.get(id))); // keep for retry; newer edits win
         return;
       }
       if (res.data && athletes().has(id)) athletes().set(id, overlay(res.data)); // also picks up other staff's edits
@@ -133,10 +121,17 @@
       $("loginErr").textContent = /invalid/i.test(error.message) ? L("อีเมลหรือรหัสผ่านไม่ถูกต้อง", "Incorrect email or password") : L("เข้าสู่ระบบไม่ได้: ", "Could not sign in: ") + error.message;
     } else $("password").value = "";
   });
+  async function doLogout() { stopApp(); await sb.auth.signOut(); }
   async function logout() {
     try { await flushAll(); } catch (e) {}
-    stopApp();
-    await sb.auth.signOut();
+    const n = dirtyCount();                       // edits that still could not be saved
+    if (n) {
+      confirmUI($("confirmBox"),
+        L(`ยังมีการแก้ไขที่บันทึกไม่สำเร็จ ${n} นักกีฬา — ถ้าออกจากระบบตอนนี้จะหายไป`, `${n} athlete(s) have unsaved edits — logging out now will lose them`),
+        L("ออกจากระบบอยู่ดี", "Log out anyway"), doLogout);
+      return;
+    }
+    await doLogout();
   }
   $("logoutBtn").onclick = logout;
   $("deniedLogout").onclick = logout;
