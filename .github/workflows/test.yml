@@ -22,6 +22,16 @@ jobs:
         run: node tests/scoring.test.js
       - name: Excel (.xlsx) export container, checksums and numbers
         run: node tests/xlsx.test.js
+      - name: Rendering escapes hostile text (XSS)
+        run: node tests/render.test.js
+      - name: Excel paste import parsing
+        run: node tests/import.test.js
+      - name: Save engine helpers (two scorers never overwrite each other)
+        run: node tests/patch.test.js
+      - name: Realtime event handling (incl. deletes)
+        run: node tests/athlete-events.test.js
+      - name: Live API - anonymous visitors can read results and nothing else
+        run: node tests/anon-security.test.js
       - name: JavaScript syntax check
         run: |
           for f in js/*.js; do
