@@ -39,14 +39,14 @@
     const e = S.ev(event), n = S.nSer(event), [cat, kind, th, en] = S.TABS[tab];
     const cols = n + 7, f = hasFilter(opts.filter) ? opts.filter : null;
     let count = { shown: 0, total: 0 };
-    let thead = `<tr><th class="l">#</th><th class="l">${L("ผลัด<small>Relay</small>", "Relay")}</th><th class="l">${L("ลู่<small>Lane</small>", "Lane")}</th><th class="l">${L("สังกัด<small>Univ.</small>", "Team")}</th><th class="l">${L("ชื่อ<small>Name</small>", "Name")}</th>`;
-    for (let i = 1; i <= n; i++) thead += `<th>S${i}</th>`;
+    let thead = `<tr><th class="l">#</th><th class="l c-relay">${L("ผลัด<small>Relay</small>", "Relay")}</th><th class="l c-lane">${L("ลู่<small>Lane</small>", "Lane")}</th><th class="l c-uni">${L("สังกัด<small>Univ.</small>", "Team")}</th><th class="l">${L("ชื่อ<small>Name</small>", "Name")}</th>`;
+    for (let i = 1; i <= n; i++) thead += `<th class="c-ser">S${i}</th>`;
     thead += `<th>${L("รวม<small>Total</small>", "Total")}</th>${kind === "team" ? `<th>${L("ทีม<small>Team</small>", "Team")}</th>` : `<th>${L("นัด<small>Shots</small>", "Shots")}</th>`}</tr>`;
 
     const row = (r, rankCell, extra, cls = "") => `<tr class="row ${opts.clickable ? "click " : ""}${cls} ${r.a.id === opts.selectedId ? "sel" : ""} ${opts.nowRelay && String(r.a.relay || "") === opts.nowRelay ? "now" : ""}" data-id="${esc(r.a.id)}"${opts.clickable ? ' tabindex="0"' : ""}>
-      <td class="rank">${rankCell}</td><td class="l">${esc(r.a.relay || "")}</td><td class="l">${esc(r.a.lane || "")}</td>
-      <td class="uni">${esc(r.a.uni || "")}</td>
-      <td class="name">${esc(r.a.name)}${r.st.count === e.shots ? `<span class="pill done">${L("ครบ", "Done")}</span>` : ""}</td>
+      <td class="rank">${rankCell}</td><td class="l c-relay">${esc(r.a.relay || "")}</td><td class="l c-lane">${esc(r.a.lane || "")}</td>
+      <td class="uni c-uni">${esc(r.a.uni || "")}</td>
+      <td class="name">${esc(r.a.name)}${r.st.count === e.shots ? `<span class="pill done">${L("ครบ", "Done")}</span>` : ""}${r.a.uni ? `<span class="name-uni">${esc(r.a.uni)}</span>` : ""}</td>
       ${r.st.ser.map((s) => `<td class="ser">${serCell(s, e.mode)}</td>`).join("")}
       <td class="total">${r.st.any ? S.fmtT(r.st.total, e.mode) + (e.mode === "int" || r.st.x ? `<span class="x">-${r.st.x}X</span>` : "") : "–"}</td>${extra}</tr>`;
 

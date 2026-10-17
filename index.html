@@ -27,7 +27,7 @@
 <script src="js/theme.js"></script>
 <script src="js/i18n.js"></script>
 </head>
-<body>
+<body class="pub">
 <div class="wrap">
   <header>
     <div>
@@ -37,7 +37,7 @@
       <p class="sub updated" id="updated"></p>
       <p class="nowbadge" id="now" hidden></p>
     </div>
-    <div class="status"><a class="hdr-link" href="results.html"><span class="l-th">ผลย้อนหลัง</span><span class="l-en">Past results</span></a><a class="hdr-link" id="boardLink" href="board.html"><span class="l-th">จอใหญ่</span><span class="l-en">Projector</span></a><span class="dot" id="liveDot"></span><span id="liveText">…</span></div>
+    <div class="status"><a class="hdr-link" href="results.html"><span class="l-th">ผลย้อนหลัง</span><span class="l-en">Past results</span></a><a class="hdr-link board-link" id="boardLink" href="board.html"><span class="l-th">จอใหญ่</span><span class="l-en">Projector</span></a><span class="dot" id="liveDot"></span><span id="liveText">…</span></div>
   </header>
 
   <div class="notice past" id="pastBanner" hidden></div>
@@ -51,7 +51,7 @@
       <select id="relaySel"></select></label>
     <button type="button" id="clearF" class="ghost" hidden><span class="l-th">ล้างตัวกรอง</span><span class="l-en">Clear</span></button>
     <span class="meta" id="fCount"></span>
-    <a class="plink" id="printLink" href="print.html"><span class="l-th">🖨 พิมพ์ผล</span><span class="l-en">🖨 Print</span></a>
+    <a class="plink" id="printLink" href="print.html"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"></path><rect x="3" y="9" width="18" height="8" rx="2"></rect><path d="M6 14h12v7H6z"></path></svg><span class="l-th">พิมพ์ผล</span><span class="l-en">Print</span></a>
   </div>
 
   <main>
@@ -61,6 +61,7 @@
         <thead id="thead"></thead>
         <tbody id="tbody"></tbody>
       </table></div>
+      <p class="tap-hint"><span class="l-th">แตะที่ชื่อเพื่อดูคะแนนรายชุด (S1–S6)</span><span class="l-en">Tap a name to see series scores (S1–S6)</span></p>
     </section>
   </main>
   <div id="detail" class="modal" hidden role="dialog" aria-modal="true" aria-label="Athlete detail">

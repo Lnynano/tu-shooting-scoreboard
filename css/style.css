@@ -170,7 +170,8 @@ label.chk{display:inline-flex;gap:6px;align-items:center;font-size:.85rem}
 .filters{align-items:flex-end}
 .filters .grow{flex:1 1 220px}
 .filters input[type=search]{width:100%;font:inherit;font-size:.95rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:7px 10px}
-.plink{margin-left:auto;font-size:.88rem;white-space:nowrap}
+.plink{margin-left:auto;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border:1px solid var(--line);border-radius:4px;background:var(--paper);color:var(--ink);font-size:.88rem;text-decoration:none;white-space:nowrap}
+.plink:hover{border-color:var(--ink)}
 /* athlete detail popup */
 .modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto}
 .modal-card{position:relative;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-top:5px solid var(--accent);border-radius:8px;max-width:640px;width:100%;margin:4vh auto;padding:16px}
@@ -226,3 +227,28 @@ tbody tr.row.now td:first-child{box-shadow:inset 5px 0 0 var(--accent)}
 .nowbadge{margin:4px 0 0;display:inline-block;font-weight:600;font-size:.85rem;background:#fff;color:#c8102e;border-radius:99px;padding:2px 12px}
 .nowbadge[hidden]{display:none}
 body.board .nowbadge{font-size:clamp(.9rem,1.4vw,1.6rem)}
+/* mobile name sub-line + hint (only shown on the public page on phones) */
+.name-uni,.tap-hint{display:none}
+@media (max-width:640px){
+  body.pub{padding-inline:12px;padding-block:12px 32px}
+  /* compact header */
+  body.pub header{padding:12px 14px;gap:10px;border-bottom-width:4px}
+  body.pub header>div:first-child>.logo{width:44px}
+  body.pub h1{font-size:clamp(1.2rem,6.2vw,1.6rem)}
+  body.pub .sub{font-size:.8rem;margin-top:2px}
+  body.pub header .status{width:100%;justify-content:flex-start;gap:6px}
+  body.pub header .status button,body.pub .hdr-link{padding:5px 10px;font-size:.8rem}
+  body.pub .board-link{display:none}
+  /* tabs as an even 2x2 grid */
+  body.pub .tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  body.pub .tabs button{font-size:.95rem;padding:8px 10px}
+  /* table: # · Name (+ team) · Total · Shots — series are in the tap-to-open detail */
+  body.pub .c-relay,body.pub .c-lane,body.pub .c-uni,body.pub .c-ser,body.pub td.ser{display:none}
+  body.pub .name-uni{display:block;font-size:.78rem;color:var(--muted);text-decoration:none}
+  body.pub td.name{min-width:0;width:100%}
+  body.pub tbody tr.row.click td.name{text-decoration:none}
+  body.pub td{padding:10px 6px}
+  body.pub section.panel{padding:12px}
+  body.pub .tap-hint{display:block;margin:10px 0 0;font-size:.78rem;color:var(--muted)}
+  body.pub .plink{margin-left:0}
+}
