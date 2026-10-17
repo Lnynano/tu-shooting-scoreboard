@@ -252,3 +252,19 @@ body.board .nowbadge{font-size:clamp(.9rem,1.4vw,1.6rem)}
   body.pub .tap-hint{display:block;margin:10px 0 0;font-size:.78rem;color:var(--muted)}
   body.pub .plink{margin-left:0}
 }
+/* EN | TH switch (header) */
+.lang-seg{display:inline-flex;border:1px solid color-mix(in srgb,var(--band-ink) 55%,transparent);border-radius:4px;overflow:hidden}
+header .lang-seg button{border:0;border-radius:0;padding:6px 10px;font-family:var(--mono);font-weight:600;font-size:.78rem;background:transparent;color:var(--band-ink);opacity:.75}
+header .lang-seg button[aria-pressed=true]{background:var(--band-ink);color:var(--band);opacity:1}
+:root:not([data-theme="light"]) header .lang-seg button[aria-pressed=true]{color:#000}
+body.board header .lang-seg button{font-size:clamp(.8rem,1.1vw,1.3rem)}
+/* summary strip (public page) */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.stats:empty{display:none}
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:10px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat b{font-family:var(--display);font-weight:700;font-size:1.5rem;line-height:1.1;overflow-wrap:anywhere}
+.stat span{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+@media (max-width:640px){
+  body.pub .stats{display:none}
+  body.pub header .lang-seg button{padding:5px 9px}
+}

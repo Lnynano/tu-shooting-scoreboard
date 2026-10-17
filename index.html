@@ -54,6 +54,8 @@
     <a class="plink" id="printLink" href="print.html"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"></path><rect x="3" y="9" width="18" height="8" rx="2"></rect><path d="M6 14h12v7H6z"></path></svg><span class="l-th">พิมพ์ผล</span><span class="l-en">Print</span></a>
   </div>
 
+  <div class="stats" id="stats" aria-label="Summary"></div>
+
   <main>
     <section class="panel" aria-labelledby="resH">
       <h2 id="resH"><span id="boardTitle">ผลการแข่งขัน</span> <small id="evInfo"></small></h2>
@@ -95,6 +97,7 @@
     $("now").textContent = Render.nowText(comp); $("now").hidden = !$("now").textContent;
     $("tabs").innerHTML = Render.tabsHTML(tab, list);
     drawRelays(list);
+    $("stats").innerHTML = comp ? Render.statsHTML(list, comp.event, tab) : "";
     const h = Render.paint(
       { title: $("boardTitle"), info: $("evInfo"), thead: $("thead"), tbody: $("tbody") },
       { athletes: list, event: comp ? comp.event : "ap60", teamSize: comp ? comp.team_size : 3, nowRelay: comp ? comp.current_relay : "", tab, loading: !state || !state.loaded, filter: F, clickable: true });

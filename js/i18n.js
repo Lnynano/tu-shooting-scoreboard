@@ -26,21 +26,26 @@
   };
   window.I18n = api;
 
-  let btn = null;
+  // EN | TH segmented switch: the active language is highlighted, so it is never ambiguous.
+  let seg = null;
   function paint() {
-    if (!btn) return;
-    btn.textContent = lang === "en" ? "TH" : "EN";
-    btn.setAttribute("aria-label", lang === "en" ? "สลับเป็นภาษาไทย (Thai)" : "Switch to English");
+    if (!seg) return;
+    seg.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
   }
   function init() {
     applyAttrs();
     const host = document.querySelector("header .status");
     if (!host) return;
-    btn = document.createElement("button");
-    btn.type = "button"; btn.className = "ghost lang-btn";
-    btn.onclick = () => api.set(lang === "en" ? "th" : "en");
+    seg = document.createElement("div");
+    seg.className = "lang-seg"; seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "Language / ภาษา");
+    for (const [code, label, name] of [["th", "TH", "ภาษาไทย"], ["en", "EN", "English"]]) {
+      const b = document.createElement("button");
+      b.type = "button"; b.dataset.lang = code; b.textContent = label; b.lang = code; b.setAttribute("aria-label", name);
+      b.onclick = () => api.set(code);
+      seg.appendChild(b);
+    }
     paint();
-    host.insertBefore(btn, host.firstChild);
+    host.insertBefore(seg, host.firstChild);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();

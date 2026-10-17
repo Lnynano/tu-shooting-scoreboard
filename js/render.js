@@ -12,8 +12,9 @@
 
   function tabsHTML(tab, athletes) {
     return S.TABS.map(([cat, kind, th, en], i) => {
-      const c = athletes.filter((a) => (a.cat || "W") === cat).length;
-      return `<button type="button" data-t="${i}" aria-pressed="${tab === i}">${L(th, en)}<span class="c">${kind === "ind" ? c : ""}</span></button>`;
+      // individual tabs count athletes, team tabs count teams (same grouping as the team table)
+      const c = kind === "ind" ? athletes.filter((a) => (a.cat || "W") === cat).length : S.teams(athletes, cat, "ap60", 3).length;
+      return `<button type="button" data-t="${i}" aria-pressed="${tab === i}">${L(th, en)}<span class="c">${c}</span></button>`;
     }).join("");
   }
 
@@ -160,6 +161,21 @@
   // "Now shooting: Relay 2" (empty when no relay is marked)
   const nowText = (comp) => (comp && comp.current_relay ? L("● กำลังยิง: ผลัด ", "● Now shooting: Relay ") + comp.current_relay : "");
 
+  /* Summary strip for the public page: athletes, finished, teams, leader (for the selected tab's category). */
+  function statsHTML(athletes, event, tab) {
+    const e = S.ev(event), [cat] = S.TABS[tab];
+    const all = S.ranked(athletes, cat, event);
+    if (!all.length) return "";
+    const done = all.filter((r) => r.st.count === e.shots).length;
+    const nTeams = S.teams(athletes, cat, event, 3).length;
+    const lead = all.find((r) => r.st.any);
+    const box = (v, th, en) => `<div class="stat"><b>${v}</b><span>${L(th, en)}</span></div>`;
+    return box(all.length, "นักกีฬา", "Athletes")
+      + box(`${done}/${all.length}`, "ยิงครบแล้ว", "Finished")
+      + box(nTeams, "ทีม", "Teams")
+      + (lead ? box(`${esc(lead.a.name)} · ${S.fmtT(lead.st.total, e.mode)}`, "อันดับ 1 ตอนนี้", "Leading now") : "");
+  }
+
   const getParam = (k) => new URLSearchParams(location.search).get(k);
-  window.Render = { esc, boardHTML, paint, tabsHTML, setLive, subline, getParam, evName, noActiveHTML, detailHTML, updatedText, nowText };
+  window.Render = { esc, statsHTML, boardHTML, paint, tabsHTML, setLive, subline, getParam, evName, noActiveHTML, detailHTML, updatedText, nowText };
 })();
