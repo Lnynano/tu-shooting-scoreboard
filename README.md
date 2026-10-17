@@ -104,9 +104,9 @@ A signed-in user who is not in `staff` sees “not allowed” and cannot write.
 
 - ไฟล์อยู่ในโฟลเดอร์ `img/` (ใช้โลโก้ Thammasat Shooting Club จริง): `logo.png` (ป้ายโลโก้พื้นดำในหัวทุกหน้า), `logo-print.png` (โลโก้พื้นโปร่งใสสำหรับใบพิมพ์ผลและโปสเตอร์ QR บนกระดาษขาว), `favicon-32.png`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png` (ไอคอนแท็บ/หน้าจอโฮม), `og-image.png` (1200×630 ภาพที่ LINE/Facebook แสดงตอนแชร์ลิงก์; ต้นฉบับ `og-source.html`) และ `logo-source.jpg` (โลโก้เต็มพร้อมชื่อชมรม)
 - **เปลี่ยนโลโก้**: เตรียมไฟล์โลโก้ใหม่ แล้วสร้าง `logo.png` (สี่เหลี่ยมโค้งมน 256px), `favicon-32.png`, `apple-touch-icon.png`, `icon-192/512.png` และ `og-image.png` ใหม่ (เรนเดอร์ `og-source.html` ด้วยเบราว์เซอร์)
-- ภาพตัวอย่างเป็นแบบเดียวกันทุกครั้ง (เว็บ static ทำภาพแยกตามการแข่งขันไม่ได้) แท็กอยู่ใน `<head>` ของ `index.html`, `board.html`, `results.html` — ที่อยู่ในแท็ก `og:url`/`og:image` เขียนเป็นที่อยู่ GitHub Pages ปัจจุบัน **ถ้าย้ายไปโดเมนของตัวเอง ต้องแก้ที่อยู่เหล่านี้**
+- ภาพตัวอย่างเป็นแบบเดียวกันทุกครั้ง (เว็บ static ทำภาพแยกตามการแข่งขันไม่ได้) แท็กอยู่ใน `<head>` ของ `index.html`, `board.html`, `results.html` — ที่อยู่ใน `og:url`/`og:image`/`twitter:image` ใช้โดเมน `https://shooting.lnynano.com` (ต้องตรงกับไฟล์ `CNAME`; `node tests/domain.test.js` ตรวจให้) **ถ้าเปลี่ยนโดเมน ให้แก้ `CNAME` และที่อยู่เหล่านี้พร้อมกัน**
 LINE/Facebook จดจำภาพตัวอย่างไว้ (cache): ถ้าเปลี่ยนภาพแล้วยังเห็นของเดิม ให้ใช้ Facebook Sharing Debugger กด “Scrape Again” หรือรอสักพัก
-  The real club logo is used (`img/logo.png` etc.); regenerate the PNGs if you change it, and update the absolute URLs in the share tags if you move to a custom domain.
+  The real club logo is used (`img/logo.png` etc.); regenerate the PNGs if you change it. The share tags use `https://shooting.lnynano.com`; keep them in sync with the `CNAME` file (checked by `tests/domain.test.js`).
 
 ## รันในเครื่อง / Run locally
 
@@ -125,6 +125,7 @@ node tests/render.test.js          # ข้อความอันตราย�
 node tests/import.test.js          # อ่านข้อมูลที่วางจาก Excel
 node tests/patch.test.js           # ตัวช่วยบันทึก (สองคนกรอกพร้อมกันไม่ทับกัน)
 node tests/athlete-events.test.js  # Realtime รวมถึงการลบนักกีฬา
+node tests/domain.test.js          # CNAME ตรงกับที่อยู่ในแท็กแชร์
 node tests/anon-security.test.js   # ต่อ API จริง: ผู้ชมทั่วไปอ่านผลได้อย่างเดียว (SKIP_NETWORK_TESTS=1 เพื่อข้าม)
 ```
 
@@ -132,11 +133,14 @@ node tests/anon-security.test.js   # ต่อ API จริง: ผู้ชม
 GitHub Actions รันชุดทดสอบนี้อัตโนมัติทุก pull request และทุกครั้งที่ push เข้า `main` (`.github/workflows/test.yml`)
 GitHub Actions runs these tests on every pull request and every push to `main`.
 
-## Deploy บน GitHub Pages
+## Deploy บน GitHub Pages + โดเมน shooting.lnynano.com
 
 1. Push ขึ้น GitHub
-2. Settings → Pages → Source: _Deploy from a branch_ → branch `main`, folder `/ (root)`
-3. เปิด `https://<user>.github.io/<repo>/` (ไม่ต้อง build; deploy ใหม่ประมาณ 1 นาทีหลัง merge เข้า `main`) ใช้ publishable key ใน `js/config.js` ได้ตามปกติ — ความปลอดภัยอยู่ที่ RLS ไม่ใช่การซ่อน key. **ห้ามใส่ `service_role` / secret key**
+2. Settings → Pages → Source: _Deploy from a branch_ → branch `main`, folder `/ (root)` ไฟล์ `CNAME` ที่ราก (`shooting.lnynano.com`) ตั้งโดเมนให้
+3. **DNS** (ที่ผู้ให้บริการโดเมน `lnynano.com`): เพิ่มเรคคอร์ด `CNAME` ชื่อ `shooting` ชี้ไปที่ `lnynano.github.io` (ห้ามใส่ชื่อ repo) รอ DNS อัปเดตแล้วใน Settings → Pages ติ๊ก **Enforce HTTPS** (ใบรับรองออกให้อัตโนมัติภายในไม่กี่นาที)
+4. เปิด `https://shooting.lnynano.com/` (ไม่ต้อง build; deploy ใหม่ประมาณ 1 นาทีหลัง merge เข้า `main`) ลิงก์เดิม `lnynano.github.io/tu-shooting-scoreboard/` และ QR ที่พิมพ์ไปแล้วจะถูก redirect มาโดเมนใหม่อัตโนมัติ
+5. ใช้ publishable key ใน `js/config.js` ได้ตามปกติ — ความปลอดภัยอยู่ที่ RLS ไม่ใช่การซ่อน key. **ห้ามใส่ `service_role` / secret key**
+6. ผู้ใช้ staff ต้องล็อกอินใหม่หนึ่งครั้งบนโดเมนใหม่ (เซสชันเก็บแยกตามโดเมน) ไม่ต้องตั้งค่า CORS/Redirect ใน Supabase สำหรับการล็อกอินด้วยอีเมล+รหัสผ่าน แต่ถ้าใช้อีเมลรีเซ็ตรหัสผ่าน ให้ตั้ง Authentication → URL Configuration → Site URL เป็น `https://shooting.lnynano.com`
 
 ## แก้ปัญหา / Troubleshooting
 
