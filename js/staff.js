@@ -114,6 +114,8 @@
   // (final_pos 1-8). Shots go through the save engine like qualification scores (patch_final).
   const F = Finals;
   const finCat = () => (UI.fcat === "M" ? "M" : "W");
+  // ticked boxes in the setup pickers live here, so a live redraw (poll, realtime, TH/EN) never unticks them
+  const finPick = new Set(), finTie = new Set();
   function renderFinal() {
     const p = $("finalPanel");
     if (p.hidden) return;
@@ -175,12 +177,12 @@
     const max = F.FINAL.maxFinalists, room = max - sl.ids.length, total = sl.ids.length + sl.tie.length;
     const qual = total >= F.FINAL.minFinalists
       ? `<p>${sl.ids.map((id, i) => `<span class="fchip">${i + 1}. ${name(id)}</span>`).join(" ")}</p>` +
-        (sl.tie.length ? `<p class="notice">${L(`อันดับ 8 คะแนนเท่ากันทุกอย่าง — เลือก ${room} คน`, `Exact tie for 8th place — choose ${room}`)}<br>${sl.tie.map((id) => `<label class="chk"><input type="checkbox" data-tie="${esc(id)}"> ${name(id)}</label>`).join(" ")}</p>` : "") +
+        (sl.tie.length ? `<p class="notice">${L(`อันดับ 8 คะแนนเท่ากันทุกอย่าง — เลือก ${room} คน`, `Exact tie for 8th place — choose ${room}`)}<br>${sl.tie.map((id) => `<label class="chk"><input type="checkbox" data-tie="${esc(id)}"${finTie.has(id) ? " checked" : ""}> ${name(id)}</label>`).join(" ")}</p>` : "") +
         `<button type="button" class="primary" data-fa="startQual">${L(`เริ่มรอบชิงจากรอบคัดเลือก (${Math.min(max, total)} คน)`, `Start from qualification (${Math.min(max, total)})`)}</button>`
       : `<p class="meta">${L("ยังไม่มีคะแนนรอบคัดเลือกพอ", "Not enough qualification scores yet")}</p>`;
     const people = list.filter((a) => (a.cat || "W") === cat).sort((p, q) => String(p.name).localeCompare(String(q.name), "th"));
     const manual = people.length
-      ? `<p>${people.map((a) => `<label class="chk"><input type="checkbox" data-pick="${esc(a.id)}"> ${esc(a.name)}</label>`).join(" ")}</p>
+      ? `<p>${people.map((a) => `<label class="chk"><input type="checkbox" data-pick="${esc(a.id)}"${finPick.has(a.id) ? " checked" : ""}> ${esc(a.name)}</label>`).join(" ")}</p>
         <button type="button" data-fa="startManual">${L("เริ่มรอบชิงกับคนที่เลือก (2–8 คน)", "Start with the selected athletes (2–8)")}</button>`
       : `<p class="meta">${L("ยังไม่มีนักกีฬาในประเภทนี้ — เพิ่มชื่อในตารางด้านล่างก่อน", "No athletes in this category yet — add them in the table below first")}</p>`;
     return `<div class="fsetup"><div><h3>${L("1. จากรอบคัดเลือก (8 อันดับแรก)", "1. From qualification (top 8)")}</h3>${qual}</div>
@@ -188,6 +190,7 @@
   }
 
   async function startFinal(ids) {
+    finPick.clear(); finTie.clear();
     for (const [i, id] of ids.entries()) {
       const res = await run(() => sb.from("athletes").update({ final_pos: i + 1, final_shots: [], final_so: {} }).eq("id", id).select("id"));
       if (!res) return;
@@ -227,7 +230,9 @@
   $("finalBtn").onclick = () => { const p = $("finalPanel"); p.hidden = !p.hidden; renderFinal(); };
   $("finalPanel").addEventListener("change", (e2) => {
     if (e2.target.id === "showFinalChk") patchComp({ show_final: e2.target.checked });
-    else if (e2.target.dataset.fin || e2.target.dataset.so) renderFinal();
+    else if (e2.target.dataset.pick) { e2.target.checked ? finPick.add(e2.target.dataset.pick) : finPick.delete(e2.target.dataset.pick); }
+    else if (e2.target.dataset.tie) { e2.target.checked ? finTie.add(e2.target.dataset.tie) : finTie.delete(e2.target.dataset.tie); }
+    else if (e2.target.dataset.fin || e2.target.dataset.so) setTimeout(renderFinal, 0);
   });
   $("finalPanel").addEventListener("input", (e2) => { if (e2.target.dataset.fin || e2.target.dataset.so) finalInput(e2.target); });
   $("finalPanel").addEventListener("keydown", (e2) => {
@@ -246,18 +251,18 @@
   $("finalPanel").addEventListener("click", (e2) => {
     const b = e2.target.closest("[data-fcat],[data-fa]");
     if (!b) return;
-    if (b.dataset.fcat) { UI.fcat = b.dataset.fcat; saveUI(); renderFinal(); return; }
+    if (b.dataset.fcat) { UI.fcat = b.dataset.fcat; saveUI(); finPick.clear(); finTie.clear(); renderFinal(); return; }
     const act = b.dataset.fa, cat = finCat(), c = comp();
     if (act === "close") { $("finalPanel").hidden = true; return; }
     if (!c) return;
     if (act === "startQual") {
       const sl = F.startList([...athletes().values()], cat, c.event);
       const over = sl.ids.length + sl.tie.length > F.FINAL.maxFinalists, room = F.FINAL.maxFinalists - sl.ids.length;
-      const picked = [...$("finalPanel").querySelectorAll("[data-tie]:checked")].map((x) => x.dataset.tie);
+      const picked = sl.tie.filter((id) => finTie.has(id));
       if (over && picked.length !== room) { alert(L(`เลือกผู้เข้ารอบจากคนที่คะแนนเท่ากัน ${room} คน`, `Choose ${room} of the tied athletes`)); return; }
       startFinal(sl.ids.concat(over ? picked : sl.tie));
     } else if (act === "startManual") {
-      const ids = [...$("finalPanel").querySelectorAll("[data-pick]:checked")].map((x) => x.dataset.pick);
+      const ids = [...finPick].filter((id) => { const a = athletes().get(id); return a && (a.cat || "W") === cat; });
       if (ids.length < F.FINAL.minFinalists || ids.length > F.FINAL.maxFinalists) { alert(L("เลือก 2–8 คน", "Choose 2 to 8 athletes")); return; }
       startFinal(ids);
     } else if (act === "cancel") {
