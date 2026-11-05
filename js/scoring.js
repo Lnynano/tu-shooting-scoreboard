@@ -203,11 +203,13 @@
   // Only text is touched; numbers stay as they are.
   const safeCell = (v) => (typeof v === "string" && /^[=+\-@\t\r]/.test(v) ? "'" + v : v);
   const joinRows = (rows, sep, needsQuote) => rows.map((r) => r.map((v) => { v = safeCell(v); return needsQuote.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v; }).join(sep)).join("\n");
-  const toCSV = (athletes, key, teamSize, title) => joinRows(resultRows(athletes, key, teamSize, title), ",", /[",\n]/);
+  const rowsToCSV = (rows) => joinRows(rows, ",", /[",\n]/);
+  const rowsToTSV = (rows) => joinRows(rows, "\t", /["\t\n]/);
+  const toCSV = (athletes, key, teamSize, title) => rowsToCSV(resultRows(athletes, key, teamSize, title));
   // Tab-separated: pastes straight into separate cells in Google Sheets / Excel.
-  const toTSV = (athletes, key, teamSize, title) => joinRows(resultRows(athletes, key, teamSize, title), "\t", /["\t\n]/);
+  const toTSV = (athletes, key, teamSize, title) => rowsToTSV(resultRows(athletes, key, teamSize, title));
 
-  const api = { EVENTS, TABS, ev, nSer, parseShot, parseSeries, fmtT, serHas, stats, cmp, ranked, teams, normCat, parseImport, resultRows, toCSV, toTSV, safeCell, medals, tidyTeam, teamKey, resultTables };
+  const api = { EVENTS, TABS, ev, nSer, parseShot, parseSeries, fmtT, serHas, stats, cmp, ranked, teams, normCat, parseImport, resultRows, toCSV, toTSV, rowsToCSV, rowsToTSV, safeCell, medals, tidyTeam, teamKey, resultTables };
   root.Scoring = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

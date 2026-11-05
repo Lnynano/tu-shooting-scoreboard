@@ -114,4 +114,24 @@ assert.strictEqual(F.stageOf(1), "S1"); assert.strictEqual(F.stageOf(10), "S2");
   assert.strictEqual(F.medals({ event: "p25", team_size: 2 }, started).finalState.W, null);
 }
 
+// --- draw(): a shuffled copy (same people, input untouched); finalRows(): copy-for-Sheets block per final
+{
+  const ids = ["a", "b", "c", "d", "e", "f", "g", "h"];
+  let seed = 7; const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const d = F.draw(ids, rand);
+  assert.deepStrictEqual([...d].sort(), ids, "same athletes");
+  assert.notDeepStrictEqual(d, ids, "order changed with this seed");
+  assert.deepStrictEqual(ids, ["a", "b", "c", "d", "e", "f", "g", "h"], "input not changed");
+  const seen = new Set(); for (let k = 0; k < 200; k++) seen.add(F.draw(["x", "y", "z"]).join(""));
+  assert.strictEqual(seen.size, 6, "every order of 3 can come up");
+
+  const fin = (id, pos, v) => ({ id, name: "N" + id, uni: "TU", cat: "W", final_pos: pos, final_shots: Array(24).fill(v), final_so: {} });
+  const rows = F.finalRows({ event: "ar60" }, [fin("1", 1, "10.5"), fin("2", 2, "10.0"), fin("3", 3, "9.5")]);
+  assert.deepStrictEqual(rows[1], ["Women final"]);
+  assert.strictEqual(rows[2].length, 3 + 24 + 2);
+  assert.deepStrictEqual([rows[3][0], rows[3][1], rows[3].at(-2), rows[3].at(-1)], [1, "N1", "252.0", ""], "winner: place, name, total");
+  assert.deepStrictEqual([rows[5][0], rows[5][1], rows[5][24], rows[5][25], rows[5].at(-1)], [3, "N3", "9.5", "", 22], "3rd: shot 22 kept, shot 23 blank, out after 22");
+  assert.deepStrictEqual(F.finalRows({ event: "p25" }, [fin("1", 1, "10")]), [], "no final for 25m pistol");
+}
+
 console.log("OK — finals: elimination order, shoot-offs, small fields, pistol whole numbers, start list");

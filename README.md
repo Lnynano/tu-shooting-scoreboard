@@ -29,15 +29,15 @@ Every page has a **Thai / English** switch and a **light / dark** button (rememb
 | `js/vendor/supabase.js`                  | supabase-js 2.49.4 (MIT) เก็บไว้ในโปรเจกต์ ไม่โหลดจาก CDN — หน้าเว็บเปิดได้แม้ CDN ถูกบล็อกที่สนาม |
 | `js/xlsx.js`                             | สร้างไฟล์ Excel (.xlsx) ในเบราว์เซอร์ ไม่ใช้ไลบรารีภายนอก                       |
 | `css/style.css`, `css/print.css`         | หน้าตา (แดง-ขาว สว่าง / แดง-ดำ มืด) และหน้าพิมพ์                                |
-| `supabase/migrations/*.sql`              | โครงสร้างฐานข้อมูล 001–008 (รันตามลำดับ)                                       |
+| `supabase/migrations/*.sql`              | โครงสร้างฐานข้อมูล 001–009 (รันตามลำดับ)                                       |
 | `templates/athlete-import-template.xlsx` | เทมเพลต Excel สำหรับนำเข้ารายชื่อ                                              |
 | `tests/scoring.test.js`, `prototype/`    | ทดสอบ logic เทียบกับต้นแบบเดิม                                                  |
 
 ## ตั้งค่า Supabase / Supabase setup
 
 1. รัน migration ตามลำดับใน SQL Editor (หรือผ่าน Supabase MCP / CLI):
-   `001_init.sql` ตาราง + RLS + realtime · `002_harden.sql` · `003_set_active.sql` ตั้งรายการที่แสดงทีละหนึ่ง · `004_patch_athlete.sql` บันทึกแบบแก้เฉพาะจุด (สองคนกรอกพร้อมกันไม่ทับกัน) · `005_athlete_log.sql` ประวัติการแก้ไข · `006_current_relay.sql` ผลัดที่กำลังยิง · `007_show_podium.sql` สวิตช์โพเดียมบนจอใหญ่ · `008_finals.sql` รอบชิง (คอลัมน์ + `patch_final`)
-   Run the migrations in order (001 → 008).
+   `001_init.sql` ตาราง + RLS + realtime · `002_harden.sql` · `003_set_active.sql` ตั้งรายการที่แสดงทีละหนึ่ง · `004_patch_athlete.sql` บันทึกแบบแก้เฉพาะจุด (สองคนกรอกพร้อมกันไม่ทับกัน) · `005_athlete_log.sql` ประวัติการแก้ไข · `006_current_relay.sql` ผลัดที่กำลังยิง · `007_show_podium.sql` สวิตช์โพเดียมบนจอใหญ่ · `008_finals.sql` รอบชิง (คอลัมน์ + `patch_final`) · `009_final_history.sql` ประวัติการแก้ไขรวมรอบชิง
+   Run the migrations in order (001 → 009).
 2. ทุกคนอ่านได้ (anon `SELECT`) แต่เขียนได้เฉพาะคนที่อยู่ในตาราง `staff` (RLS + `is_staff()`). ประวัติ (`athlete_log`) อ่านได้เฉพาะ staff และเขียนผ่าน trigger เท่านั้น
    Everyone can read the scoreboard; only users in `staff` can write; the history table is staff-read-only and written only by a trigger.
 3. แนะนำ: Dashboard → Authentication → Sign In / Providers → ปิด _Allow new users to sign up_ และเปิด _Leaked password protection_ (ถ้าแพ็กเกจรองรับ)
@@ -85,7 +85,7 @@ Tick **Podium on projector** for the award ceremony: the board shows the top 3 o
 **เกียรติบัตร / Certificates** — ปุ่ม **🏅 เกียรติบัตร** ในหน้า staff เปิด `certificate.html` เกียรติบัตร A4 แนวนอน 1 หน้าต่อคน สำหรับอันดับ 1–3 ของบุคคลหญิง/ชาย และทีม (ทีมได้คนละใบ เฉพาะสมาชิกที่ถูกนับคะแนน) ใส่วันที่ ชื่อผู้ลงนาม และตำแหน่งได้บนหน้าจอ (จำไว้ในเครื่องนี้) แล้วกด **พิมพ์** — ภาษาตามปุ่ม TH/EN
 **🏅 Certificates** opens one A4 landscape certificate per medal winner (teams: one per counted member). Set the date and signer on screen, then print. The podium and the certificates use the same medal list.
 
-**รอบชิง / Final** (10m Air Pistol, 10m Air Rifle) — ปุ่ม **🎯 รอบชิง** ในหน้า staff เลือกหญิง/ชาย แล้วเริ่มได้ 2 แบบ: **จากรอบคัดเลือก** (8 อันดับแรก ถ้าอันดับ 8 คะแนนเท่ากันทุกอย่างให้เลือกเอง) หรือ **เลือกเอง** 2–8 คน (รอบชิงเพื่อความสนุก ไม่ต้องมีรอบคัดเลือก) · กรอกทีละนัด กด Enter เพื่อลงไปคนถัดไปในนัดเดียวกัน · ตกรอบอัตโนมัติหลังนัด 12, 14 … 22 และตัดสินเหรียญทอง/เงินหลังนัด 24 · ถ้าคะแนนเท่ากันจะขึ้นช่องยิงตัดสิน (shoot-off) · ปืนสั้นเป็นจำนวนเต็ม (X = 10) ปืนยาวเป็นทศนิยม · เมื่อรอบชิงจบ โพเดียมและเกียรติบัตรประเภทบุคคลใช้ผลรอบชิง (ทีมยังใช้รอบคัดเลือก) · ตัวเลขกติกาทั้งหมดอยู่ที่ `FINAL` ใน `js/finals.js`
+**รอบชิง / Final** (10m Air Pistol, 10m Air Rifle) — ปุ่ม **🎯 รอบชิง** ในหน้า staff เลือกหญิง/ชาย แล้วเริ่มได้ 2 แบบ: **จากรอบคัดเลือก** (8 อันดับแรก ถ้าอันดับ 8 คะแนนเท่ากันทุกอย่างให้เลือกเอง) หรือ **เลือกเอง** 2–8 คน (รอบชิงเพื่อความสนุก ไม่ต้องมีรอบคัดเลือก) · กรอกทีละนัด กด Enter เพื่อลงไปคนถัดไปในนัดเดียวกัน · ตกรอบอัตโนมัติหลังนัด 12, 14 … 22 และตัดสินเหรียญทอง/เงินหลังนัด 24 · ถ้าคะแนนเท่ากันจะขึ้นช่องยิงตัดสิน (shoot-off) · ปืนสั้นเป็นจำนวนเต็ม (X = 10) ปืนยาวเป็นทศนิยม · เมื่อรอบชิงจบ โพเดียมและเกียรติบัตรประเภทบุคคลใช้ผลรอบชิง (ทีมยังใช้รอบคัดเลือก) · ติ๊ก “สุ่มตำแหน่งเริ่มยิง” ก่อนเริ่มเพื่อจับฉลากตำแหน่งแบบ ISSF · ประวัติการแก้ไขบันทึกนัดรอบชิงด้วย (ย้อนกลับได้) · ปุ่มคัดลอกผลรวมรอบชิงไว้ด้านบน · ตัวเลขกติกาทั้งหมดอยู่ที่ `FINAL` ใน `js/finals.js`
 **🎯 Final**: start from the top 8 of qualification, or pick 2–8 athletes for a fun final. Enter moves down the shot column. Eliminations, shoot-offs and medals are automatic; once the final ends, individual medals on the podium and certificates come from it.
 
 **ประวัติการแก้ไข / History** — ปุ่ม **ประวัติการแก้ไข** แสดงใคร แก้อะไร เมื่อไร (150 รายการล่าสุด, กรองเฉพาะนักกีฬาที่เลือกได้)

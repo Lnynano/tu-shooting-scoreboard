@@ -126,6 +126,14 @@ assert.strictEqual(R.nowText(null), "");
   }
 }
 
+// --- certificates of a finished final say "Final score"; qualification medals keep "Score"
+{
+  const fa = (id, pos, v) => ({ id, name: "C" + id, uni: "TU", cat: "W", relay: "1", lane: id, shots: [], ser: ["100.0"], final_pos: pos, final_shots: Array(24).fill(v), final_so: {} });
+  const h = R.certificatesHTML({ name: "Cup", event: "ar60", team_size: 3 }, [fa("1", 1, "10.5"), fa("2", 2, "10.0"), fa("3", 3, "9.5")], {}).html;
+  assert.ok(h.includes("คะแนนรอบชิง 252.0"), "final score label on the winner");
+  assert.ok(h.includes("คะแนนทีม "), "team certificates unchanged");
+}
+
 // --- board auto-cycle skips empty tabs (tabs: women, women team, men, men team)
 assert.strictEqual(R.nextTab(0, 1, [3, 1, 4, 2]), 1, "normal step");
 assert.strictEqual(R.nextTab(1, 1, [0, 0, 4, 2]), 2, "skips nothing when next is full");
