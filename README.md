@@ -82,6 +82,9 @@ A signed-in user who is not in `staff` sees “not allowed” and cannot write.
 **โพเดียม / Podium** — ติ๊ก **แสดงโพเดียมบนจอใหญ่** ที่แถบด้านบนของหน้า staff ตอนมอบรางวัล จอใหญ่จะเปลี่ยนจากตารางเป็น 3 อันดับแรกของแต่ละประเภท (บุคคล/ทีม หญิง/ชาย สลับให้อัตโนมัติ ข้ามประเภทที่ว่าง; คะแนนเท่ากันทุกอย่างยืนขั้นเดียวกัน) — เอาติ๊กออกเพื่อกลับเป็นตาราง
 Tick **Podium on projector** for the award ceremony: the board shows the top 3 of each category instead of the table. Untick to go back.
 
+**เกียรติบัตร / Certificates** — ปุ่ม **🏅 เกียรติบัตร** ในหน้า staff เปิด `certificate.html` เกียรติบัตร A4 แนวนอน 1 หน้าต่อคน สำหรับอันดับ 1–3 ของบุคคลหญิง/ชาย และทีม (ทีมได้คนละใบ เฉพาะสมาชิกที่ถูกนับคะแนน) ใส่วันที่ ชื่อผู้ลงนาม และตำแหน่งได้บนหน้าจอ (จำไว้ในเครื่องนี้) แล้วกด **พิมพ์** — ภาษาตามปุ่ม TH/EN
+**🏅 Certificates** opens one A4 landscape certificate per medal winner (teams: one per counted member). Set the date and signer on screen, then print. The podium and the certificates use the same medal list.
+
 **ประวัติการแก้ไข / History** — ปุ่ม **ประวัติการแก้ไข** แสดงใคร แก้อะไร เมื่อไร (150 รายการล่าสุด, กรองเฉพาะนักกีฬาที่เลือกได้)
 
 - **ย้อนกลับ**: คืนค่าเดิมของรายการนั้น ถ้าค่านั้นถูกแก้ไปอีกแล้วจะไม่ย้อน (กันทับงานใหม่)

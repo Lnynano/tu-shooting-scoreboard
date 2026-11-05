@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="th" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TU Shooting — Certificates</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap"></noscript>
+<link rel="icon" href="img/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="img/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<meta name="theme-color" content="#c8102e">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/certificate.css">
+<script src="js/i18n.js"></script>
+</head>
+<body class="cert-page">
+<div class="wrap noprint">
+  <header>
+    <div>
+      <img class="logo" src="img/logo.png" alt="Thammasat Shooting Club" width="56" height="56">
+      <h1>TU Shooting <span>Certificates</span></h1>
+      <p class="sub" id="subline"><span class="l-th">เกียรติบัตรผู้ได้รับเหรียญ (1 หน้าต่อคน)</span><span class="l-en">Medal certificates (one page each)</span></p>
+    </div>
+    <div class="status">
+      <a class="hdr-link" href="staff.html"><span class="l-th">กลับ</span><span class="l-en">Back</span></a>
+      <button type="button" id="printBtn" class="primary" disabled><span class="l-th">🖨 พิมพ์</span><span class="l-en">🖨 Print</span></button>
+    </div>
+  </header>
+  <div class="bar">
+    <label class="f" for="certDate"><span class="l-th">วันที่ในเกียรติบัตร</span><span class="l-en">Date on the certificate</span>
+      <input type="date" id="certDate"></label>
+    <label class="f" for="signer"><span class="l-th">ชื่อผู้ลงนาม</span><span class="l-en">Signed by</span>
+      <input type="text" id="signer" size="26"></label>
+    <label class="f" for="signerTitle"><span class="l-th">ตำแหน่ง</span><span class="l-en">Position</span>
+      <input type="text" id="signerTitle" size="34"></label>
+    <span class="meta" id="count"></span>
+  </div>
+</div>
+
+<div class="certs" id="certs"></div>
+
+<script src="js/vendor/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/athlete-events.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/scoring.js"></script>
+<script src="js/render.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const L = I18n.L;
+  const c = Render.getParam("c");
+  let state = null;
+
+  // date / signer are remembered in this browser only (a convenience; nothing is saved to the database)
+  const KEY = "tu-cert";
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) {}
+  const today = new Date(), pad = (n) => String(n).padStart(2, "0");
+  $("certDate").value = saved.date || `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+  $("signer").value = saved.signer || "";
+  $("signerTitle").value = saved.signerTitle || L("ประธานชมรมยิงปืน มหาวิทยาลัยธรรมศาสตร์", "President, Thammasat Shooting Club");
+
+  function fmtDate(v) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || "");
+    if (!m) return "";
+    return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString(L("th-TH", "en-GB"), { day: "numeric", month: "long", year: "numeric" });
+  }
+
+  function draw() {
+    const comp = state && state.comp, box = $("certs");
+    if (!state || !state.loaded) { box.innerHTML = `<p class="empty">${L("กำลังโหลด…", "Loading…")}</p>`; return; }
+    if (!comp) { box.innerHTML = `<p class="empty">${L("ไม่พบการแข่งขัน", "Competition not found")}</p>`; $("printBtn").disabled = true; return; }
+    document.title = comp.name + " — " + L("เกียรติบัตร", "Certificates");
+    const r = Render.certificatesHTML(comp, state.list(), { date: fmtDate($("certDate").value), signer: $("signer").value.trim(), signerTitle: $("signerTitle").value.trim() });
+    box.innerHTML = r.count ? r.html : `<p class="empty">${L("ยังไม่มีผู้ได้รับเหรียญ — กรอกคะแนนก่อน", "No medal winners yet — enter scores first")}</p>`;
+    $("count").textContent = comp.name + " · " + L(`${r.count} ใบ`, `${r.count} certificate(s)`);
+    $("printBtn").disabled = !r.count;
+  }
+  for (const id of ["certDate", "signer", "signerTitle"]) $(id).addEventListener("input", () => {
+    try { localStorage.setItem(KEY, JSON.stringify({ date: $("certDate").value, signer: $("signer").value, signerTitle: $("signerTitle").value })); } catch (e) {}
+    draw();
+  });
+  $("printBtn").onclick = () => window.print();
+  TU.watch({ id: c, onChange: (s) => { state = s; draw(); }, onStatus: () => {} });
+  I18n.onChange(draw);
+  draw();
+})();
+</script>
+</body>
+</html>
