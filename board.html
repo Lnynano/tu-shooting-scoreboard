@@ -49,6 +49,7 @@
   </header>
 
   <nav class="tabs" id="tabs" aria-label="Categories"></nav>
+  <div class="ftimer-bar" id="ftimer" hidden aria-live="off"><span class="lbl" id="ftimerLbl"></span><span class="clock" id="ftimerClock"></span></div>
   <div class="progress" aria-hidden="true"><i id="bar"></i></div>
 
   <main>
@@ -121,6 +122,18 @@
   setInterval(() => {
     const el = Date.now() - started;
     $("bar").style.width = paused ? "100%" : Math.min(100, (el / CYCLE_MS) * 100) + "%";
+    // final timer running (final view on): stay on that category's final and count down
+    const comp = state && state.comp, t = comp && comp.show_final ? Finals.timerLeft(comp.final_timer, Date.now()) : null;
+    $("ftimer").hidden = !t;
+    if (t) {
+      $("ftimerLbl").textContent = t.label === "SO" ? I18n.L("ยิงตัดสิน", "Shoot-off") : /^S\d/.test(t.label) ? I18n.L("ชุด ", "Series ") + t.label : I18n.L("นัด ", "Shot ") + t.label;
+      $("ftimerClock").textContent = t.over ? I18n.L("หมดเวลา", "Time") : Finals.fmtClock(t.left);
+      $("ftimer").classList.toggle("low", t.left <= 10);
+      const want = t.cat === "M" ? 2 : 0;
+      if (tab !== want) go(want);
+      started = Date.now();
+      return;
+    }
     const emptyHere = counts[tab] === 0 && counts.some((n) => n > 0);   // e.g. opened on the women tab with only men entered
     if (!paused && (el >= CYCLE_MS || emptyHere)) step(1);
   }, 200);

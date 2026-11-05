@@ -312,3 +312,9 @@ tr.row.final.out td{color:var(--muted)}
 tr.row.final.p1 td.name,tr.row.final.p1 td.total{color:var(--medal-1)}
 tr.row.final.p2 td.name,tr.row.final.p2 td.total{color:var(--medal-2)}
 tr.row.final.p3 td.name,tr.row.final.p3 td.total{color:var(--medal-3)}
+/* Final shot timer on the projector board */
+.ftimer-bar{display:flex;align-items:baseline;justify-content:center;gap:.6em;background:var(--band);color:var(--band-ink);border-radius:6px;padding:.2em .8em;font-family:var(--display);font-weight:700}
+.ftimer-bar .lbl{font-size:clamp(1rem,1.8vw,2.2rem);text-transform:uppercase;letter-spacing:.04em;opacity:.85}
+.ftimer-bar .clock{font-family:var(--mono);font-size:clamp(2rem,4.5vw,5.5rem);line-height:1.1;font-variant-numeric:tabular-nums}
+.ftimer-bar.low .clock{color:#ffd23f}
+.panel.final .ftimer{margin:0 0 10px}

@@ -163,7 +163,12 @@
     } else if (st.status === "done") status = `<div class="notice past">${L("รอบชิงจบแล้ว — โพเดียมและเกียรติบัตรใช้ผลรอบชิงนี้", "The final is finished — the podium and certificates use this result")}</div>`;
     else status = `<p class="meta">${L(`นัดถัดไป: ${st.nextShot} · ตกรอบหลังนัด ${F.elimPoints(fins.length).join(", ") || "—"} · Enter = ลงไปคนถัดไป`, `Next shot: ${st.nextShot} · eliminations after shots ${F.elimPoints(fins.length).join(", ") || "—"} · Enter = next athlete`)}</p>`;
 
-    p.innerHTML = head(sub) + catBtns + status +
+    // shot timer for the projector board: start the time that fits the next shot, or stop it
+    const tf = F.timerFor(st.nextShot, st.status === "shootoff"), tl = F.timerLeft(c.final_timer, Date.now());
+    const timerRow = st.status === "done" ? "" : `<div class="rowbtns ftimer">
+      <button type="button" class="primary" data-fa="timer" data-label="${tf.label}" data-secs="${tf.secs}">⏱ ${L(`เริ่มจับเวลา ${tf.label === "SO" ? "ยิงตัดสิน" : tf.label.startsWith("S") ? "ชุด " + tf.label : "นัด " + tf.label} (${tf.secs} วิ)`, `Start timer: ${tf.label === "SO" ? "shoot-off" : tf.label.startsWith("S") ? "series " + tf.label : "shot " + tf.label} (${tf.secs}s)`)}</button>
+      ${tl ? `<button type="button" data-fa="timerStop">■ ${L("หยุดเวลา", "Stop timer")}</button><span class="meta">${L("กำลังจับเวลา", "Running")}: ${esc(tl.label)} ${F.fmtClock(tl.left)}</span>` : `<span class="meta">${L("เวลาแสดงบนจอใหญ่ (ต้องติ๊กแสดงรอบชิง)", "Shown on the projector board (with the final view on)")}</span>`}</div>`;
+    p.innerHTML = head(sub) + catBtns + status + timerRow +
       `<div class="tablebox"><table class="fgrid"><thead>${th1}${th2}</thead><tbody>${body}</tbody></table></div>
       <div class="rowbtns"><button type="button" class="ghost" data-fa="cancel">${L("ยกเลิกรอบชิงประเภทนี้", "Cancel this final")}</button></div>`;
     if (keep) {
@@ -259,6 +264,8 @@
     const act = b.dataset.fa, cat = finCat(), c = comp();
     if (act === "close") { $("finalPanel").hidden = true; return; }
     if (!c) return;
+    if (act === "timer") { patchComp({ final_timer: { cat, label: b.dataset.label, secs: +b.dataset.secs, start: new Date().toISOString() } }).then(renderFinal); return; }
+    if (act === "timerStop") { patchComp({ final_timer: null }).then(renderFinal); return; }
     if (act === "startQual") {
       const sl = F.startList([...athletes().values()], cat, c.event);
       const over = sl.ids.length + sl.tie.length > F.FINAL.maxFinalists, room = F.FINAL.maxFinalists - sl.ids.length;

@@ -134,4 +134,20 @@ assert.strictEqual(F.stageOf(1), "S1"); assert.strictEqual(F.stageOf(10), "S2");
   assert.deepStrictEqual(F.finalRows({ event: "p25" }, [fin("1", 1, "10")]), [], "no final for 25m pistol");
 }
 
+// --- shot timer: the right time for the next shot, countdown, "over" for a few seconds, then gone
+{
+  assert.deepStrictEqual(F.timerFor(1, false), { label: "S1", secs: 250 });
+  assert.deepStrictEqual(F.timerFor(6, false), { label: "S2", secs: 250 });
+  assert.deepStrictEqual(F.timerFor(13, false), { label: "13", secs: 50 });
+  assert.deepStrictEqual(F.timerFor(25, false), { label: "24", secs: 50 }, "never past shot 24");
+  assert.deepStrictEqual(F.timerFor(15, true), { label: "SO", secs: 50 }, "shoot-off");
+  const t0 = Date.parse("2026-11-06T10:00:00Z"), t = { cat: "M", label: "S1", secs: 250, start: "2026-11-06T10:00:00Z" };
+  assert.deepStrictEqual(F.timerLeft(t, t0 + 10_500), { left: 240, over: false, label: "S1", cat: "M" });
+  assert.deepStrictEqual(F.timerLeft(t, t0 + 251_000), { left: 0, over: true, label: "S1", cat: "M" }, "time is up");
+  assert.strictEqual(F.timerLeft(t, t0 + 256_000), null, "gone 5 s after the end");
+  assert.strictEqual(F.timerLeft(t, t0 - 60_000), null, "start far in the future (bad clock) is ignored");
+  assert.strictEqual(F.timerLeft(null, t0), null); assert.strictEqual(F.timerLeft({ start: "x", secs: 50 }, t0), null);
+  assert.strictEqual(F.fmtClock(250), "4:10"); assert.strictEqual(F.fmtClock(9), "0:09");
+}
+
 console.log("OK — finals: elimination order, shoot-offs, small fields, pistol whole numbers, start list");
