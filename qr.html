@@ -52,7 +52,7 @@
 <script>
 (function () {
   const $ = (id) => document.getElementById(id);
-  const c = new URLSearchParams(location.search).get("c");
+  const c0 = new URLSearchParams(location.search).get("c"), c = TU.isId(c0) ? c0 : null;   // ignore a broken ?c=
   let lockOn = false;
   function draw() {
     const url = QR.publicUrl(lockOn);

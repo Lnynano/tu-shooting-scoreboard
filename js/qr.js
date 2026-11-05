@@ -20,7 +20,7 @@
   function publicUrl(keepCompetition) {
     const u = new URL("./", location.href);
     const c = new URLSearchParams(location.search).get("c");
-    if (keepCompetition && c) u.searchParams.set("c", c);
+    if (keepCompetition && c && window.TU && TU.isId(c)) u.searchParams.set("c", c);   // never print a broken id into a QR code
     return u.href;
   }
 

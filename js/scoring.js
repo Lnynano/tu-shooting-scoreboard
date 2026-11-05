@@ -98,7 +98,7 @@
     const list = athletes.filter((a) => (a.cat || "W") === cat).map((a) => ({ a, st: stats(a, key) }));
     const scored = list.filter((r) => r.st.any).sort((p, q) => cmp(p, q, mode));
     const rest = list.filter((r) => !r.st.any).sort((p, q) =>
-      (p.a.relay || "").localeCompare(q.a.relay || "") ||
+      String(p.a.relay || "").localeCompare(String(q.a.relay || ""), undefined, { numeric: true }) ||   // relay "2" before "10"
       String(p.a.lane || "").localeCompare(String(q.a.lane || ""), undefined, { numeric: true }));
     scored.forEach((r, i) => { r.rank = i > 0 && cmp(scored[i - 1], r, mode) === 0 ? scored[i - 1].rank : i + 1; });
     return scored.concat(rest);
@@ -185,12 +185,15 @@
     return out;
   }
 
-  const joinRows = (rows, sep, needsQuote) => rows.map((r) => r.map((v) => (needsQuote.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v)).join(sep)).join("\n");
+  // Text that starts with = + - @ (or a tab / line break) would run as a formula in Excel / Sheets: prefix it with '.
+  // Only text is touched; numbers stay as they are.
+  const safeCell = (v) => (typeof v === "string" && /^[=+\-@\t\r]/.test(v) ? "'" + v : v);
+  const joinRows = (rows, sep, needsQuote) => rows.map((r) => r.map((v) => { v = safeCell(v); return needsQuote.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v; }).join(sep)).join("\n");
   const toCSV = (athletes, key, teamSize, title) => joinRows(resultRows(athletes, key, teamSize, title), ",", /[",\n]/);
   // Tab-separated: pastes straight into separate cells in Google Sheets / Excel.
   const toTSV = (athletes, key, teamSize, title) => joinRows(resultRows(athletes, key, teamSize, title), "\t", /["\t\n]/);
 
-  const api = { EVENTS, TABS, ev, nSer, parseShot, parseSeries, fmtT, serHas, stats, cmp, ranked, teams, normCat, parseImport, resultRows, toCSV, toTSV, tidyTeam, teamKey, resultTables };
+  const api = { EVENTS, TABS, ev, nSer, parseShot, parseSeries, fmtT, serHas, stats, cmp, ranked, teams, normCat, parseImport, resultRows, toCSV, toTSV, safeCell, tidyTeam, teamKey, resultTables };
   root.Scoring = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);
