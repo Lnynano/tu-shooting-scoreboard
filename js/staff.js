@@ -206,7 +206,7 @@
   }
   function renderMeta() {
     const c = comp();
-    for (const id of ["compName", "event", "teamSize", "activeBtn", "delCompBtn", "importBtn", "copyBtn", "histBtn", "printBtn2", "xlsxBtn", "nowSel", "podiumChk"]) $(id).disabled = !c;
+    for (const id of ["compName", "event", "teamSize", "activeBtn", "delCompBtn", "importBtn", "copyBtn", "histBtn", "printBtn2", "certBtn", "xlsxBtn", "nowSel", "podiumChk"]) $(id).disabled = !c;
     $("addForm").hidden = !c;
     if (!c) { $("subline").textContent = L("สร้างการแข่งขันก่อน · Create a competition to begin", "Create a competition to begin"); $("links").innerHTML = ""; $("activeBadge").hidden = true; return; }
     $("event").value = c.event;
@@ -660,6 +660,7 @@ Somchai Yingtrong\tTU\tM\t1\t4</pre>
   /* ---------- printable sheet ---------- */
   $("qrBtn").onclick = () => { const c = comp(); window.open("qr.html" + (c ? "?c=" + encodeURIComponent(c.id) : ""), "_blank", "noopener"); };
   $("printBtn2").onclick = () => { const c = comp(); if (c) window.open("print.html?c=" + encodeURIComponent(c.id), "_blank", "noopener"); };
+  $("certBtn").onclick = () => { const c = comp(); if (c) window.open("certificate.html?c=" + encodeURIComponent(c.id), "_blank", "noopener"); };
 
   /* ---------- Excel (.xlsx) ---------- */
   $("xlsxBtn").onclick = () => {

@@ -85,6 +85,27 @@ assert.strictEqual(R.nowText(null), "");
   assert.ok(R.podiumHTML({ athletes: [], event: "ap30", teamSize: 3, tab: 2 }).html.includes('class="empty"'), "empty category message");
 }
 
+// --- certificates: one page per medal winner (team: per counted member), all text escaped
+{
+  const a = (id, name, uni, s, cat = "W") => ({ id, name, uni, cat, relay: "1", lane: id, shots: [], ser: s });
+  const list = [a("1", "Gold", "TU", ["98", "97", "96-5x"]), a("2", "Silver", "KU", ["97", "97", "96"]), a("3", "Bronze", "CU", ["95", "95", "95"]),
+    a("5", "Mate", "TU", ["90", "90", "90"]), a("6", "Man", "TU", ["90", "90", "90"], "M")];
+  const r = R.certificatesHTML({ name: "Cup", event: "ap30", team_size: 2 }, list, { date: "5 Nov 2026", signer: "Chair", signerTitle: "President" });
+  // women: 3 individual + team TU (2 counted) + KU + CU = 7; men: 1 individual + team TU = 2
+  assert.strictEqual(r.count, 9);
+  assert.strictEqual((r.html.match(/<section class="cert m1">/g) || []).length, 5, "gold: Gold + women team TU (Gold, Mate) + Man + men team TU (Man)");
+  assert.ok(r.html.includes("291 (5x)") && r.html.includes("5 Nov 2026") && r.html.includes("(Chair)") && r.html.includes("President"));
+  assert.strictEqual(R.certificatesHTML({ name: "Empty", event: "ap30", team_size: 3 }, [], {}).count, 0);
+  for (const evil of EVIL) {
+    const h = R.certificatesHTML({ name: evil, event: "ar30", team_size: 3 }, [a("e", evil, evil, ["100.0", "100.0", "100.0"])], { date: evil, signer: evil, signerTitle: evil }).html;
+    // remove the page's own logo and medal word first, then nothing tag-like may remain from the hostile text
+    const own = h.replaceAll('<img class="clogo" src="img/logo-print.png" alt="" width="90" height="90">', "").replace(/<b>(เหรียญทอง|เหรียญเงิน|เหรียญทองแดง)<\/b>/g, "");
+    assert.ok(!/<img\b/i.test(own) && !/<b>/.test(own), "only the page's own <img> and <b> tags");
+    assertSafe(own, "certificatesHTML / " + evil.slice(0, 18));
+    checks++;
+  }
+}
+
 // --- board auto-cycle skips empty tabs (tabs: women, women team, men, men team)
 assert.strictEqual(R.nextTab(0, 1, [3, 1, 4, 2]), 1, "normal step");
 assert.strictEqual(R.nextTab(1, 1, [0, 0, 4, 2]), 2, "skips nothing when next is full");

@@ -1,0 +1,38 @@
+/* Medal certificates (certificate.html): one A4 landscape page per winner, white paper.
+   Screen view = print preview; the controls bar (.noprint) is not printed. */
+html,body{background:#fff!important;color:#000!important;color-scheme:light}
+body.cert-page{padding:16px}
+body.cert-page header{background:#c8102e;color:#fff;border-radius:8px;border-bottom:6px solid #7d0a1d}
+body.cert-page .bar input{background:#fff;color:#000}
+.certs{display:flex;flex-direction:column;align-items:center;gap:10mm;margin-top:14px;overflow-x:auto}
+.cert{--medal:#a87f12;width:297mm;height:210mm;flex:none;background:#fff;color:#000;padding:9mm;box-shadow:0 2px 14px rgba(0,0,0,.18);font-family:var(--body);break-after:page;break-inside:avoid;overflow:hidden}
+.cert.m2{--medal:#77818c}
+.cert.m3{--medal:#9a5a32}
+.frame{height:100%;border:1.6mm solid #000;outline:.5mm solid var(--medal);outline-offset:-3.4mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10mm 22mm}
+.clogo{width:30mm;height:30mm;display:block}
+.corg{font-family:var(--display);font-weight:600;letter-spacing:.22em;text-transform:uppercase;font-size:12pt;margin-top:2mm}
+.ctitle{font-family:var(--display);font-weight:700;font-size:50pt;line-height:1.1;margin:3mm 0 0;color:#c8102e;text-transform:none;letter-spacing:.02em}
+.cline{font-size:16pt;margin:4mm 0 1mm}
+.cname{font-family:var(--body);font-weight:600;font-size:36pt;line-height:1.2;border-bottom:.4mm solid #000;padding:0 10mm 1mm;max-width:100%;overflow-wrap:anywhere}
+.cuni{font-size:14pt;color:#333;margin-top:1.5mm}
+.caward{font-size:20pt;margin:5mm 0 0;display:flex;align-items:center;gap:3mm;justify-content:center;flex-wrap:wrap}
+.caward b{color:var(--medal);font-weight:700}
+.cplace{font-size:13pt;color:#333}
+.cmedal{display:inline-flex;align-items:center;justify-content:center;width:11mm;height:11mm;border-radius:50%;background:var(--medal);color:#fff;font-family:var(--display);font-weight:700;font-size:16pt;order:-1}
+.ccat{font-size:14pt;margin:3mm 0 0}
+.ccomp{font-size:15pt;margin:1.5mm 0 0;font-weight:500}
+.cdate{font-size:12pt;margin:4mm 0 0;color:#222}
+.csign{margin-top:auto;padding-top:6mm;font-size:12pt;min-width:75mm}
+.csign .sline{display:block;border-bottom:.3mm solid #000;height:12mm;margin-bottom:1.5mm}
+.csign .stitle{font-size:11pt;color:#333}
+/* small screens: show a half-size preview (printing still uses full A4) */
+@media screen and (max-width:1180px){.cert{zoom:.5}}
+@page{size:A4 landscape;margin:0}
+@media print{
+  .noprint{display:none!important}
+  body.cert-page{padding:0}
+  .certs{display:block;margin:0;overflow:visible}
+  .cert{box-shadow:none;margin:0;zoom:1}
+  .cert:last-child{break-after:auto}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}

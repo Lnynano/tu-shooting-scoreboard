@@ -129,6 +129,20 @@
     return out;
   }
 
+  // Medal winners per category: places 1-3 (exact ties share a place); only athletes with a score and teams with a counted member.
+  // The one place that decides medals: the podium and the certificates both use it.
+  // {W:{ind:[{place,name,uni,total,x}], team:[{place,uni,members:[names],total,x}]}, M:{...}}
+  function medals(athletes, key, teamSize) {
+    const out = {};
+    for (const cat of ["W", "M"]) out[cat] = {
+      ind: ranked(athletes, cat, key).filter((r) => r.st.any && r.rank <= 3)
+        .map((r) => ({ place: r.rank, name: r.a.name, uni: r.a.uni || "", total: r.st.total, x: r.st.x })),
+      team: teams(athletes, cat, key, teamSize).filter((t) => t.counted.length && t.rank <= 3)
+        .map((t) => ({ place: t.rank, uni: t.uni, members: t.counted.map((r) => r.a.name), total: t.total, x: t.x }))
+    };
+    return out;
+  }
+
   const normCat = (raw) => (/^(m|ชาย|men|male|man)/.test(String(raw || "").trim().toLowerCase()) ? "M" : "W");
 
   // Pasted rows: name, uni, cat, relay, lane, S1..Sn (tab or comma separated; header row skipped).
@@ -193,7 +207,7 @@
   // Tab-separated: pastes straight into separate cells in Google Sheets / Excel.
   const toTSV = (athletes, key, teamSize, title) => joinRows(resultRows(athletes, key, teamSize, title), "\t", /["\t\n]/);
 
-  const api = { EVENTS, TABS, ev, nSer, parseShot, parseSeries, fmtT, serHas, stats, cmp, ranked, teams, normCat, parseImport, resultRows, toCSV, toTSV, safeCell, tidyTeam, teamKey, resultTables };
+  const api = { EVENTS, TABS, ev, nSer, parseShot, parseSeries, fmtT, serHas, stats, cmp, ranked, teams, normCat, parseImport, resultRows, toCSV, toTSV, safeCell, medals, tidyTeam, teamKey, resultTables };
   root.Scoring = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

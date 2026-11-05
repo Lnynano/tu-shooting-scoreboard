@@ -109,4 +109,17 @@ for (const key of Object.keys(S.EVENTS)) {
   assert.deepStrictEqual(order, ["e", "c", "d", "b", "a"], "relay and lane sorted numerically");
 }
 
+// --- medals(): top 3 per category, exact ties share a place, unscored left out, teams list counted members
+{
+  const r = (id, cat, uni, ser) => ({ id, name: "N" + id, uni, cat, relay: "1", lane: id, shots: [], ser });
+  const list = [r("1", "W", "TU", ["98", "97", "96"]), r("2", "W", "KU", ["97", "97", "96"]), r("3", "W", "CU", ["95", "95", "95"]),
+    r("4", "W", "MU", ["95", "95", "95"]), r("5", "W", "TU", ["90", "90", "90"]), r("6", "W", "TU", []), r("7", "M", "", ["90", "90", "90"]), r("8", "M", "ZU", [])];
+  const m = S.medals(list, "ap30", 2);
+  assert.deepStrictEqual(m.W.ind.map((w) => [w.place, w.name]), [[1, "N1"], [2, "N2"], [3, "N3"], [3, "N4"]], "women individual medals with shared bronze");
+  assert.deepStrictEqual(m.W.team.map((t) => [t.place, t.uni, t.members.join("+")]), [[1, "TU", "N1+N5"], [2, "KU", "N2"], [3, "CU", "N3"], [3, "MU", "N4"]], "team medals: counted members only");
+  assert.strictEqual(m.W.team[0].total, (291 + 270) * 10);
+  assert.deepStrictEqual(m.M.ind.map((w) => w.name), ["N7"]);
+  assert.deepStrictEqual(m.M.team, [], "no team without a team name, and no medal for a team with no score yet (ZU)");
+}
+
 console.log(`OK — ${checks} comparisons against the prototype logic matched`);
