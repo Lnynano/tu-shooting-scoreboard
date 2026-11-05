@@ -25,11 +25,12 @@
     const { athletes, event, teamSize, tab } = opts;
     const e = S.ev(event), [cat, kind, th, en] = S.TABS[tab];
     const score = (t, x) => `${S.fmtT(t, e.mode)}${e.mode === "int" && x ? `<small>${x}x</small>` : ""}`;
-    const m = S.medals(athletes, event, teamSize)[cat][kind];
+    const all = window.Finals.medals({ event, team_size: teamSize }, athletes), m = all[cat][kind];
     const items = kind === "ind"
       ? m.map((w) => ({ rank: w.place, name: w.name, sub: w.uni, score: score(w.total, w.x) }))
       : m.map((w) => ({ rank: w.place, name: w.uni, sub: w.members.join(" · "), score: score(w.total, w.x) }));
     const title = L(th, en) + " — " + L("ผู้ชนะ", "Winners"), info = L(e.name, e.nameEn);
+    if (kind === "ind" && all.finalState[cat] === "running") return { title, info, html: `<p class="empty">${L("รอบชิงชนะเลิศยังไม่จบ — ผู้ชนะจะแสดงเมื่อจบรอบชิง", "The final is still running — winners appear when it ends")}</p>` };
     if (!items.length) return { title, info, html: `<p class="empty">${L("ยังไม่มีผลในประเภทนี้", "No results in this category yet")}</p>` };
     const card = (i) => `<div class="pcard"><div class="pname">${esc(i.name)}</div>${i.sub ? `<div class="psub">${esc(i.sub)}</div>` : ""}<div class="pscore">${i.score}</div></div>`;
     const col = (place) => `<div class="pcol p${place}">${items.filter((i) => i.rank === place).map(card).join("")}<div class="pstep"><span>${place}</span></div></div>`;
@@ -40,7 +41,7 @@
   // opts: { date: "5 พฤศจิกายน 2569" (already formatted), signer, signerTitle }
   const MEDAL = { 1: ["เหรียญทอง", "Gold Medal", "อันดับที่ 1", "1st place"], 2: ["เหรียญเงิน", "Silver Medal", "อันดับที่ 2", "2nd place"], 3: ["เหรียญทองแดง", "Bronze Medal", "อันดับที่ 3", "3rd place"] };
   function certificatesHTML(comp, athletes, opts) {
-    const o = opts || {}, e = S.ev(comp.event), m = S.medals(athletes, comp.event, comp.team_size);
+    const o = opts || {}, e = S.ev(comp.event), m = window.Finals.medals(comp, athletes);
     const score = (t, x) => S.fmtT(t, e.mode) + (e.mode === "int" && x ? ` (${x}x)` : "");
     const pages = [];
     const page = (place, name, sub, catLabel, scoreLine) => {

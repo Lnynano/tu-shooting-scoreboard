@@ -46,6 +46,9 @@ async function call(method, p, body) {
   expect("anon delete athletes", await call("DELETE", `/rest/v1/athletes?id=eq.${NOROW}`), DENY);
   expect("anon delete competitions", await call("DELETE", `/rest/v1/competitions?id=eq.${NOROW}`), DENY);
   expect("anon rpc patch_athlete", await call("POST", "/rest/v1/rpc/patch_athlete", { aid: NOROW }), DENY);
+  expect("anon rpc patch_final", await call("POST", "/rest/v1/rpc/patch_final", { aid: NOROW }), DENY);
+  expect("anon start a final", await call("PATCH", `/rest/v1/athletes?id=eq.${NOROW}`, { final_pos: 1 }), DENY);
+  expect("anon read final columns", await call("GET", "/rest/v1/athletes?select=final_pos,final_shots,final_so&limit=1"), [200]);
 
   // public sign-up must be switched off
   const settings = await (await fetch(URL_ + "/auth/v1/settings", { headers: { apikey: KEY } })).json();

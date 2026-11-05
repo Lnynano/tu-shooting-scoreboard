@@ -6,6 +6,7 @@ global.window = global;
 global.location = { search: "" };
 global.I18n = { L: (th) => th };
 global.Scoring = require("../js/scoring.js");
+global.Finals = require("../js/finals.js");
 require("../js/render.js");
 const R = global.Render;
 

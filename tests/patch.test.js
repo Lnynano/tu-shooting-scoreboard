@@ -11,7 +11,7 @@ const P = require("../js/patch.js");
   p = P.queue(p, { shots: { 10: "10" } });          // retyped shot 10
   p = P.queue(p, { fields: { lane: "5" } });
   p = P.queue(p, { ser: { 0: "91-2x" } });
-  assert.deepStrictEqual(p, { fields: { lane: "5" }, shots: { 10: "10", 11: "X" }, ser: { 0: "91-2x" } });
+  assert.deepStrictEqual(p, { fields: { lane: "5" }, shots: { 10: "10", 11: "X" }, ser: { 0: "91-2x" }, fin: {}, so: {} });
 }
 
 // ---- overlay: unconfirmed local edits sit on top of the server row; input is not mutated
@@ -31,9 +31,9 @@ const P = require("../js/patch.js");
 
 // ---- requeue after a failed save: failed edits kept, newer edits win
 {
-  const failed = { fields: {}, shots: { 5: "9", 6: "8" }, ser: {} };
-  const newer = { fields: {}, shots: { 6: "10" }, ser: { 0: "90" } };
-  assert.deepStrictEqual(P.requeue(failed, newer), { fields: {}, shots: { 5: "9", 6: "10" }, ser: { 0: "90" } });
+  const failed = { fields: {}, shots: { 5: "9", 6: "8" }, ser: {}, fin: {}, so: {} };
+  const newer = { fields: {}, shots: { 6: "10" }, ser: { 0: "90" }, fin: {}, so: {} };
+  assert.deepStrictEqual(P.requeue(failed, newer), { fields: {}, shots: { 5: "9", 6: "10" }, ser: { 0: "90" }, fin: {}, so: {} });
   assert.deepStrictEqual(P.requeue(failed, undefined), failed);
 }
 
@@ -73,6 +73,24 @@ assert.strictEqual(applyPatch(applyPatch(base, { fields: { lane: "2" }, shots: {
   const shown = P.overlay(serverRow, [null, pending]);
   assert.strictEqual(shown.ser[0], "92-3x", "our unsent S1 is not flickered away by the incoming row");
   assert.strictEqual(shown.ser[1], "88", "other scorer's S2 appears");
+}
+
+// --- final shots and shoot-offs: queued, merged (shoot-off rounds kept), laid over the row, and routed separately
+{
+  let p = P.queue(undefined, { fin: { 11: "10.4" } });
+  p = P.queue(p, { fin: { 12: "9.9" } });
+  p = P.queue(p, { so: { 12: { 0: "10.1" } } });
+  p = P.queue(p, { so: { 12: { 1: "9.8" } } });
+  assert.deepStrictEqual(p.fin, { 11: "10.4", 12: "9.9" });
+  assert.deepStrictEqual(p.so, { 12: { 0: "10.1", 1: "9.8" } }, "both shoot-off rounds kept");
+  assert.ok(P.hasFinal(p) && !P.hasQual(p), "final-only patch goes to patch_final only");
+  assert.ok(P.hasQual(P.queue(undefined, { ser: { 0: "90" } })) && !P.hasFinal(P.queue(undefined, { ser: { 0: "90" } })));
+  const row = { id: "f", shots: [], ser: [], final_shots: ["10.0", "10.1"], final_so: { 14: ["10.0"] } };
+  const o = P.overlay(row, [p]);
+  assert.deepStrictEqual(o.final_shots, ["10.0", "10.1", "", "", "", "", "", "", "", "", "", "10.4", "9.9"]);
+  assert.deepStrictEqual(o.final_so, { 14: ["10.0"], 12: ["10.1", "9.8"] });
+  assert.deepStrictEqual(row.final_shots, ["10.0", "10.1"], "server row not mutated");
+  assert.strictEqual(P.overlay(row, [P.queue(undefined, { ser: { 0: "90" } })]).final_shots, row.final_shots, "no final edits: final columns untouched");
 }
 
 console.log("OK — save-engine helpers verified (queue, overlay, requeue, two-scorer model)");

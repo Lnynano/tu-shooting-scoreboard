@@ -109,7 +109,28 @@
     return { ids: scored.filter((r) => r.rank < cut).map((r) => r.a.id), tie: scored.filter((r) => r.rank === cut).map((r) => r.a.id) };
   }
 
-  const api = { FINAL, FINAL_MODE, hasFinal, modeOf, elimPoints, shotVals, shootOff, standing, stageOf, startList };
+  // Finalists of one category, in start order.
+  const finalists = (athletes, cat) => athletes.filter((a) => (a.cat || "W") === cat && a.final_pos).sort((p, q) => p.final_pos - q.final_pos);
+
+  /* The medal list used by the podium and the certificates (same shape as Scoring.medals, plus finalState).
+     Team medals, and categories without a final, come from qualification. A category with finalists takes its
+     individual medals from the final, and only once the final is finished: while it runs there are none.
+     finalState: {W: null | "running" | "done", M: ...} */
+  function medals(comp, athletes) {
+    const m = S.medals(athletes, comp.event, comp.team_size), finalState = { W: null, M: null };
+    if (hasFinal(comp.event)) for (const cat of ["W", "M"]) {
+      const f = finalists(athletes, cat);
+      if (!f.length) continue;
+      const st = standing(f, modeOf(comp.event));
+      finalState[cat] = st.status === "done" ? "done" : "running";
+      m[cat].ind = st.status !== "done" ? [] : st.rows.filter((r) => r.place && r.place <= 3).sort((p, q) => p.place - q.place)
+        .map((r) => ({ place: r.place, name: r.a.name, uni: r.a.uni || "", total: r.total, x: 0, final: true }));
+    }
+    m.finalState = finalState;
+    return m;
+  }
+
+  const api = { FINAL, FINAL_MODE, hasFinal, modeOf, elimPoints, shotVals, shootOff, standing, stageOf, startList, finalists, medals };
   root.Finals = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

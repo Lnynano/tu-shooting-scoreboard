@@ -87,4 +87,31 @@ assert.strictEqual(F.stageOf(1), "S1"); assert.strictEqual(F.stageOf(10), "S2");
   assert.deepStrictEqual(F.startList(ten.slice(0, 3), "W", "ap30").ids, ["Q0", "Q1", "Q2"], "fewer than 8: everyone");
 }
 
+// --- medals(): from qualification without a final; none while the final runs; from the final once it is done
+{
+  const q = (id, uni, s, extra) => ({ id, name: id, uni, cat: "W", relay: "1", lane: id, shots: [], ser: [s, s, s], ...extra });
+  const comp = { event: "ar30", team_size: 2 };
+  const list = [q("Q1", "TU", "100.0"), q("Q2", "KU", "99.0"), q("Q3", "TU", "98.0"), q("Q4", "CU", "97.0")];
+  let m = F.medals(comp, list);
+  assert.deepStrictEqual(m.W.ind.map((w) => w.name), ["Q1", "Q2", "Q3"], "no final: qualification order");
+  assert.deepStrictEqual(m.finalState, { W: null, M: null });
+  // final started (Q1..Q4), only a few shots in -> no individual medals yet, team medals unchanged
+  const started = list.map((a, i) => ({ ...a, final_pos: i + 1, final_shots: ["10.0"] }));
+  m = F.medals(comp, started);
+  assert.deepStrictEqual(m.W.ind, []); assert.strictEqual(m.finalState.W, "running");
+  assert.deepStrictEqual(m.W.team.map((t) => t.uni), ["TU", "KU", "CU"], "team medals stay on qualification");
+  // bronze already decided (out after shot 22) but gold not yet: still no individual medals
+  const at22 = { Q1: "10.1", Q2: "10.2", Q3: "10.3", Q4: "10.9" };
+  m = F.medals(comp, started.map((a) => ({ ...a, final_shots: Array(22).fill(at22[a.id]) })));
+  assert.strictEqual(m.finalState.W, "running"); assert.deepStrictEqual(m.W.ind, [], "no medals until gold is decided");
+  // final done: Q4 wins the final although 4th in qualification
+  const vals = { Q1: "10.1", Q2: "10.2", Q3: "10.3", Q4: "10.9" };
+  m = F.medals(comp, started.map((a) => ({ ...a, final_shots: Array(24).fill(vals[a.id]) })));
+  assert.strictEqual(m.finalState.W, "done");
+  assert.deepStrictEqual(m.W.ind.map((w) => [w.place, w.name]), [[1, "Q4"], [2, "Q3"], [3, "Q2"]], "medals from the final");
+  assert.strictEqual(m.W.ind[0].total, 24 * 109);
+  // events without a final (25m pistol) ignore final columns completely
+  assert.strictEqual(F.medals({ event: "p25", team_size: 2 }, started).finalState.W, null);
+}
+
 console.log("OK — finals: elimination order, shoot-offs, small fields, pistol whole numbers, start list");
