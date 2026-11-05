@@ -20,6 +20,23 @@
       `<button type="button" data-t="${i}" aria-pressed="${tab === i}">${L(th, en)}<span class="c">${counts[i]}</span></button>`).join("");
   }
 
+  // Podium for one tab: top 3 (ties share a step), laid out 2 - 1 - 3. Only athletes / teams with a score.
+  function podiumHTML(opts) {
+    const { athletes, event, teamSize, tab } = opts;
+    const e = S.ev(event), [cat, kind, th, en] = S.TABS[tab];
+    const score = (t, x) => `${S.fmtT(t, e.mode)}${e.mode === "int" && x ? `<small>${x}x</small>` : ""}`;
+    const items = kind === "ind"
+      ? S.ranked(athletes, cat, event).filter((r) => r.st.any && r.rank <= 3)
+        .map((r) => ({ rank: r.rank, name: r.a.name, sub: r.a.uni || "", score: score(r.st.total, r.st.x) }))
+      : S.teams(athletes, cat, event, teamSize).filter((t) => t.counted.length && t.rank <= 3)
+        .map((t) => ({ rank: t.rank, name: t.uni, sub: t.counted.map((r) => r.a.name).join(" · "), score: score(t.total, t.x) }));
+    const title = L(th, en) + " — " + L("ผู้ชนะ", "Winners"), info = L(e.name, e.nameEn);
+    if (!items.length) return { title, info, html: `<p class="empty">${L("ยังไม่มีผลในประเภทนี้", "No results in this category yet")}</p>` };
+    const card = (i) => `<div class="pcard"><div class="pname">${esc(i.name)}</div>${i.sub ? `<div class="psub">${esc(i.sub)}</div>` : ""}<div class="pscore">${i.score}</div></div>`;
+    const col = (place) => `<div class="pcol p${place}">${items.filter((i) => i.rank === place).map(card).join("")}<div class="pstep"><span>${place}</span></div></div>`;
+    return { title, info, html: `<div class="podium">${[2, 1, 3].map(col).join("")}</div>` };
+  }
+
   // Next tab in direction step (+1 / -1), skipping tabs with nothing in them (e.g. no women entered).
   // When every tab is empty it simply moves one step.
   function nextTab(tab, step, counts) {
@@ -187,5 +204,5 @@
   }
 
   const getParam = (k) => new URLSearchParams(location.search).get(k);
-  window.Render = { esc, statsHTML, boardHTML, paint, tabsHTML, tabCounts, nextTab,setLive, subline, getParam, evName, noActiveHTML, detailHTML, updatedText, nowText };
+  window.Render = { esc, statsHTML, boardHTML, paint, tabsHTML, tabCounts, nextTab, podiumHTML, setLive, subline, getParam, evName, noActiveHTML, detailHTML, updatedText, nowText };
 })();

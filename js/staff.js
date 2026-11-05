@@ -206,12 +206,13 @@
   }
   function renderMeta() {
     const c = comp();
-    for (const id of ["compName", "event", "teamSize", "activeBtn", "delCompBtn", "importBtn", "copyBtn", "histBtn", "printBtn2", "xlsxBtn", "nowSel"]) $(id).disabled = !c;
+    for (const id of ["compName", "event", "teamSize", "activeBtn", "delCompBtn", "importBtn", "copyBtn", "histBtn", "printBtn2", "xlsxBtn", "nowSel", "podiumChk"]) $(id).disabled = !c;
     $("addForm").hidden = !c;
     if (!c) { $("subline").textContent = L("สร้างการแข่งขันก่อน · Create a competition to begin", "Create a competition to begin"); $("links").innerHTML = ""; $("activeBadge").hidden = true; return; }
     $("event").value = c.event;
     $("teamSize").value = String(Math.min(4, Math.max(2, c.team_size)));
     drawNowSel(c);
+    $("podiumChk").checked = !!c.show_podium;
     if (document.activeElement !== $("compName")) $("compName").value = c.name;
     $("subline").textContent = `${c.name} · ${Render.evName(evKey())}`;
     $("activeBtn").hidden = c.is_active;
@@ -249,6 +250,8 @@
     sel.value = cur;
   }
   $("nowSel").addEventListener("change", () => { patchComp({ current_relay: $("nowSel").value }); renderBoard(); });
+  // Podium: the projector board switches to the top 3 of each category (award ceremony); untick to go back to the table
+  $("podiumChk").addEventListener("change", () => patchComp({ show_podium: $("podiumChk").checked }));
   $("teamSize").addEventListener("change", () => { patchComp({ team_size: +$("teamSize").value }); renderBoard(); });
   $("delCompBtn").onclick = () => {
     const c = comp(); if (!c) return;

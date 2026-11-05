@@ -128,6 +128,21 @@ body.board td{font-size:clamp(1rem,1.5vw,1.9rem);padding:.45em .4em}
 body.board td.name{font-size:clamp(1.05rem,1.6vw,2rem)}
 body.board td.total{font-size:clamp(1.1rem,1.7vw,2.1rem)}
 body.board td.rank,body.board td.tt{font-size:clamp(1.3rem,2vw,2.6rem)}
+/* Podium (award ceremony, board only): 2 - 1 - 3 steps. Medal colours are dark enough for white numbers. */
+:root{--medal-1:#a87f12; --medal-2:#77818c; --medal-3:#9a5a32}
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(8px,1.6vw,32px);align-items:end;padding-top:.5em}
+.pcol{display:flex;flex-direction:column;gap:.4em;min-width:0}
+.pcard{text-align:center;padding:0 .3em}
+.pname{font-family:var(--display);font-weight:700;font-size:1.7em;line-height:1.05;text-transform:uppercase;overflow-wrap:anywhere}
+.p1 .pname{font-size:2.1em}
+.psub{color:var(--muted);font-size:.8em;line-height:1.3;margin-top:.2em}
+.pscore{font-family:var(--mono);font-weight:600;font-size:1.5em;font-variant-numeric:tabular-nums;margin-top:.15em}
+.pscore small{font-size:.55em;margin-left:.35em;color:var(--muted)}
+.pstep{display:flex;justify-content:center;border-radius:6px 6px 0 0;color:#fff;font-family:var(--display);font-weight:700;font-size:3em;line-height:1.2;margin-top:.15em}
+.p1 .pstep{background:var(--medal-1);height:max(150px,24vh)}
+.p2 .pstep{background:var(--medal-2);height:max(110px,17vh)}
+.p3 .pstep{background:var(--medal-3);height:max(80px,12vh)}
+@media (max-width:600px){.podium{grid-template-columns:1fr}.p1{order:-1}.pstep{height:auto!important;font-size:2em;border-radius:6px}}
 .progress{height:3px;background:var(--line);border-radius:2px;overflow:hidden}
 .progress i{display:block;height:100%;width:0;background:var(--gold)}
 .live-badge{font-family:var(--display);font-weight:700;letter-spacing:.12em;color:var(--accent);background:#fff;padding:2px 10px;border-radius:3px}
