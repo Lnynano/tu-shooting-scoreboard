@@ -130,7 +130,33 @@
     return m;
   }
 
-  const api = { FINAL, FINAL_MODE, hasFinal, modeOf, elimPoints, shotVals, shootOff, standing, stageOf, startList, finalists, medals };
+  // Random start positions (ISSF draws them): a shuffled copy of ids. rand defaults to Math.random (tests pass their own).
+  function draw(ids, rand) {
+    const r = rand || Math.random, out = ids.slice();
+    for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
+    return out;
+  }
+
+  // Final results as rows of cells (for "copy for Sheets" / CSV): one block per category that has a final.
+  function finalRows(comp, athletes) {
+    const out = [];
+    if (!hasFinal(comp.event)) return out;
+    const mode = modeOf(comp.event), n = FINAL.shots;
+    for (const [cat, label] of [["W", "Women final"], ["M", "Men final"]]) {
+      const fins = finalists(athletes, cat);
+      if (!fins.length) continue;
+      const st = standing(fins, mode);
+      out.push([], [label], ["Place", "Name", "Team", ...Array.from({ length: n }, (_, i) => "F" + (i + 1)), "Total", "Out after shot"]);
+      for (const r of st.rows) {
+        const v = shotVals(r.a.final_shots, mode).slice(0, r.outAt || n);
+        out.push([r.place || "", r.a.name, r.a.uni || "", ...Array.from({ length: n }, (_, i) => (i < v.length ? S.fmtT(v[i], mode) : "")),
+          v.length ? S.fmtT(r.total, mode) : "", r.place > 2 ? r.outAt : ""]);
+      }
+    }
+    return out;
+  }
+
+  const api = { FINAL, FINAL_MODE, hasFinal, modeOf, elimPoints, shotVals, shootOff, standing, stageOf, startList, finalists, medals, draw, finalRows };
   root.Finals = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

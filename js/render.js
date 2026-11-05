@@ -61,7 +61,7 @@
 </div></section>`);
     };
     for (const [cat, ind, team] of [["W", ["บุคคลหญิง", "Women"], ["ทีมหญิง", "Women team"]], ["M", ["บุคคลชาย", "Men"], ["ทีมชาย", "Men team"]]]) {
-      for (const w of m[cat].ind) page(w.place, w.name, w.uni, L("ประเภท" + ind[0], ind[1]), L("คะแนน ", "Score ") + score(w.total, w.x));
+      for (const w of m[cat].ind) page(w.place, w.name, w.uni, L("ประเภท" + ind[0], ind[1]), (w.final ? L("คะแนนรอบชิง ", "Final score ") : L("คะแนน ", "Score ")) + score(w.total, w.x));
       for (const t of m[cat].team) for (const name of t.members)
         page(t.place, name, L("ทีม ", "Team ") + t.uni, L("ประเภท" + team[0], team[1]), L("คะแนนทีม ", "Team score ") + score(t.total, t.x));
     }

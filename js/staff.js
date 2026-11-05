@@ -116,6 +116,7 @@
   const finCat = () => (UI.fcat === "M" ? "M" : "W");
   // ticked boxes in the setup pickers live here, so a live redraw (poll, realtime, TH/EN) never unticks them
   const finPick = new Set(), finTie = new Set();
+  let finDraw = false;   // "draw start positions" box in the setup
   function renderFinal() {
     const p = $("finalPanel");
     if (p.hidden) return;
@@ -185,11 +186,13 @@
       ? `<p>${people.map((a) => `<label class="chk"><input type="checkbox" data-pick="${esc(a.id)}"${finPick.has(a.id) ? " checked" : ""}> ${esc(a.name)}</label>`).join(" ")}</p>
         <button type="button" data-fa="startManual">${L("เริ่มรอบชิงกับคนที่เลือก (2–8 คน)", "Start with the selected athletes (2–8)")}</button>`
       : `<p class="meta">${L("ยังไม่มีนักกีฬาในประเภทนี้ — เพิ่มชื่อในตารางด้านล่างก่อน", "No athletes in this category yet — add them in the table below first")}</p>`;
-    return `<div class="fsetup"><div><h3>${L("1. จากรอบคัดเลือก (8 อันดับแรก)", "1. From qualification (top 8)")}</h3>${qual}</div>
+    return `<p><label class="chk"><input type="checkbox" id="drawChk"${finDraw ? " checked" : ""}> ${L("สุ่มตำแหน่งเริ่มยิง (แบบ ISSF) — ไม่ติ๊ก = เรียงตามอันดับ / ลำดับที่เลือก", "Draw start positions at random (ISSF style) — unticked = rank / pick order")}</label></p>
+      <div class="fsetup"><div><h3>${L("1. จากรอบคัดเลือก (8 อันดับแรก)", "1. From qualification (top 8)")}</h3>${qual}</div>
       <div><h3>${L("2. เลือกเอง (เช่น รอบชิงเพื่อความสนุก ไม่ต้องมีรอบคัดเลือก)", "2. Pick athletes (e.g. a fun final without qualification)")}</h3>${manual}</div></div>`;
   }
 
   async function startFinal(ids) {
+    if (finDraw) ids = F.draw(ids);
     finPick.clear(); finTie.clear();
     for (const [i, id] of ids.entries()) {
       const res = await run(() => sb.from("athletes").update({ final_pos: i + 1, final_shots: [], final_so: {} }).eq("id", id).select("id"));
@@ -230,6 +233,7 @@
   $("finalBtn").onclick = () => { const p = $("finalPanel"); p.hidden = !p.hidden; renderFinal(); };
   $("finalPanel").addEventListener("change", (e2) => {
     if (e2.target.id === "showFinalChk") patchComp({ show_final: e2.target.checked });
+    else if (e2.target.id === "drawChk") finDraw = e2.target.checked;
     else if (e2.target.dataset.pick) { e2.target.checked ? finPick.add(e2.target.dataset.pick) : finPick.delete(e2.target.dataset.pick); }
     else if (e2.target.dataset.tie) { e2.target.checked ? finTie.add(e2.target.dataset.tie) : finTie.delete(e2.target.dataset.tie); }
     else if (e2.target.dataset.fin || e2.target.dataset.so) setTimeout(renderFinal, 0);
@@ -741,9 +745,16 @@ Somchai Yingtrong\tTU\tM\t1\t4</pre>
   let histRows = [], histOnly = false, histTimer = null;
   const hv = (x) => (x === "" || x == null ? "—" : x);
   const fieldLabel = (f) => ({ name: L("ชื่อ", "Name"), uni: L("สังกัด", "Team"), cat: L("ประเภท", "Category"), relay: L("ผลัด", "Relay"), lane: L("ลู่", "Lane") }[f] || f);
+  // shoot-off history is stored as JSON text {"12": ["10.1", "9.8"]} -> "12: 10.1 / 9.8"
+  function soText(t) {
+    try { return Object.entries(JSON.parse(t || "{}")).map(([k, v]) => `${k}: ${v.filter(Boolean).join(" / ")}`).join(", "); } catch (e) { return t || ""; }
+  }
   function describeChange(c) {
     if (c.f === "shots") return `S${Math.floor(c.i / 10) + 1} ${L("นัดที่", "shot")} ${(c.i % 10) + 1}: ${hv(c.old)} → ${hv(c.new)}`;
     if (c.f === "ser") return `S${c.i + 1} ${L("รวมชุด", "total")}: ${hv(c.old)} → ${hv(c.new)}`;
+    if (c.f === "final_shots") return `${L("รอบชิง นัดที่", "Final shot")} ${c.i + 1}: ${hv(c.old)} → ${hv(c.new)}`;
+    if (c.f === "final_pos") return `${L("รอบชิง ตำแหน่ง", "Final position")}: ${hv(c.old)} → ${hv(c.new)}`;
+    if (c.f === "final_so") return `${L("รอบชิง ยิงตัดสิน", "Final shoot-off")}: ${hv(soText(c.old))} → ${hv(soText(c.new))}`;
     return `${fieldLabel(c.f)}: ${hv(c.old)} → ${hv(c.new)}`;
   }
   function renderHistory() {
@@ -801,19 +812,24 @@ Somchai Yingtrong\tTU\tM\t1\t4</pre>
       await flushAll();
       const a = athletes().get(e.athlete_id);
       if (!a) { $("histMsg").textContent = L("นักกีฬาถูกลบแล้ว — ใช้ “กู้คืน”", "Athlete was deleted — use Restore"); return; }
-      const fields = {}, shots = {}, ser = {};
-      let n = 0, skipped = 0;
+      const fields = {}, shots = {}, ser = {}, fin = {};
+      let n = 0, skipped = 0, manual = 0;
       for (const c of e.changes || []) {
-        const cur = c.f === "shots" ? (a.shots || [])[c.i] || "" : c.f === "ser" ? (a.ser || [])[c.i] || "" : a[c.f] ?? "";
+        if (c.f === "final_pos" || c.f === "final_so") { manual++; continue; }   // start list / shoot-off: change them in the Final panel
+        const cur = c.f === "shots" ? (a.shots || [])[c.i] || "" : c.f === "ser" ? (a.ser || [])[c.i] || "" : c.f === "final_shots" ? (a.final_shots || [])[c.i] || "" : a[c.f] ?? "";
         if (cur !== c.new) { skipped++; continue; }
         n++;
-        if (c.f === "shots") shots[c.i] = c.old; else if (c.f === "ser") ser[c.i] = c.old; else fields[c.f] = c.old;
+        if (c.f === "shots") shots[c.i] = c.old; else if (c.f === "ser") ser[c.i] = c.old; else if (c.f === "final_shots") fin[c.i] = c.old; else fields[c.f] = c.old;
       }
-      if (!n) { $("histMsg").textContent = L("ค่านี้ถูกแก้ไปแล้ว ย้อนกลับไม่ได้", "Changed again since — cannot undo"); return; }
-      const res = await run(() => sb.rpc("patch_athlete", { aid: a.id, fields, shot_patch: shots, ser_patch: ser }));
+      const manualTxt = manual ? L(` · ตำแหน่ง/ยิงตัดสินรอบชิง แก้ในแผงรอบชิง`, ` · final position / shoot-off: change them in the Final panel`) : "";
+      if (!n) { $("histMsg").textContent = manual && !skipped ? manualTxt.slice(3) : L("ค่านี้ถูกแก้ไปแล้ว ย้อนกลับไม่ได้", "Changed again since — cannot undo") + manualTxt; return; }
+      let res = {};
+      if (Object.keys(fields).length + Object.keys(shots).length + Object.keys(ser).length) res = await run(() => sb.rpc("patch_athlete", { aid: a.id, fields, shot_patch: shots, ser_patch: ser }));
+      if (res && Object.keys(fin).length) res = await run(() => sb.rpc("patch_final", { aid: a.id, shot_patch: fin }));
       if (res && res.data) athletes().set(a.id, overlay(res.data));
+      renderFinal();
       refreshLive(); renderBoard(); if (!$("card").contains(document.activeElement)) renderCard();
-      $("histMsg").textContent = res ? L(`ย้อนกลับแล้ว ${n} รายการ${skipped ? ` (ข้าม ${skipped} ที่ถูกแก้ภายหลัง)` : ""}`, `Undone: ${n} change(s)${skipped ? ` (${skipped} skipped, changed since)` : ""}`) : "";
+      $("histMsg").textContent = res ? L(`ย้อนกลับแล้ว ${n} รายการ${skipped ? ` (ข้าม ${skipped} ที่ถูกแก้ภายหลัง)` : ""}`, `Undone: ${n} change(s)${skipped ? ` (${skipped} skipped, changed since)` : ""}`) + manualTxt : "";
     } else {
       const sn = e.snapshot, c = comp();
       if (!c) return;
@@ -837,7 +853,9 @@ Somchai Yingtrong\tTU\tM\t1\t4</pre>
   /* ---------- CSV ---------- */
   $("copyBtn").onclick = async () => {
     const c = comp(); if (!c) return;
-    const csv = S.toTSV([...athletes().values()], c.event, c.team_size, c.name);
+    // final results first (they decide the medals), then qualification and teams
+    const list = [...athletes().values()], rows = S.resultRows(list, c.event, c.team_size, c.name);
+    const csv = S.rowsToTSV([rows[0], ...Finals.finalRows(c, list), ...rows.slice(1)]);
     try {
       await navigator.clipboard.writeText(csv);
       $("saveStatus").className = "save ok"; $("saveStatus").textContent = L("✓ คัดลอกผลแล้ว — วางใน Google Sheets / Excel ได้เลย", "✓ Results copied — paste into Google Sheets / Excel");
