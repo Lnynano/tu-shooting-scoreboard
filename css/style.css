@@ -283,3 +283,24 @@ body.board header .lang-seg button{font-size:clamp(.8rem,1.1vw,1.3rem)}
   body.pub .stats{display:none}
   body.pub header .lang-seg button{padding:5px 9px}
 }
+/* Final panel (staff): entry grid, 24 shots; the column being fired is highlighted */
+.panel.final h3{font-size:.95rem;margin:4px 0 6px}
+.fsetup{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.fsetup label.chk{margin:2px 10px 2px 0}
+.fchip{display:inline-block;font-size:.85rem;background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:2px 8px;margin:2px 4px 2px 0}
+.fgrid th{text-align:center;padding:4px 2px}
+.fgrid th.next{background:var(--accent);color:#fff}
+.fgrid td{padding:2px;text-align:center}
+.fgrid td.l{text-align:left;padding:2px 6px;white-space:nowrap}
+.fgrid td.name{font-weight:600}
+.fgrid td.name .name-uni{display:block;font-weight:400;font-size:.75rem;color:var(--muted)}
+.fgrid input{width:3.4em;text-align:center;padding:4px 2px;font-family:var(--mono);font-size:.9rem}
+.fgrid td.next input{border-color:var(--accent);background:var(--accent-soft)}
+.fgrid input.bad{border-color:var(--accent);color:var(--accent);font-weight:700;background:var(--accent-soft)}
+.fgrid input:disabled{opacity:.35}
+.fgrid td.total{font-family:var(--mono);font-weight:700;font-size:1rem;padding:2px 8px}
+.fgrid td.res{font-size:.85rem;white-space:nowrap}
+.fgrid tr.out td.name,.fgrid tr.out td.total{color:var(--muted)}
+.fgrid tr.gold td.name,.fgrid tr.gold td.total{color:var(--medal-1)}
+.sorow{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+.sorow input{width:5em;font-family:var(--mono);text-align:center}

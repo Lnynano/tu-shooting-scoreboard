@@ -91,7 +91,10 @@
       const patch = pending.get(id);
       if (!patch) return;
       pending.delete(id); sending.set(id, patch);
-      const res = await run(() => sb.rpc("patch_athlete", { aid: id, fields: patch.fields, shot_patch: patch.shots, ser_patch: patch.ser }));
+      // qualification edits -> patch_athlete, final shots / shoot-offs -> patch_final (each only when there is something to send)
+      let res = {};
+      if (Patch.hasQual(patch)) res = await run(() => sb.rpc("patch_athlete", { aid: id, fields: patch.fields, shot_patch: patch.shots, ser_patch: patch.ser }));
+      if (res && Patch.hasFinal(patch)) res = await run(() => sb.rpc("patch_final", { aid: id, shot_patch: patch.fin, so_patch: patch.so }));
       sending.delete(id);
       if (!res) {
         if (/not found/i.test(errMsg)) { errMsg = L("นักกีฬานี้ถูกลบไปแล้วหรือไม่มีสิทธิ์แก้ไข", "This athlete was deleted or you have no permission"); return; }
@@ -105,6 +108,168 @@
   }
   const flushAll = () => Promise.all([...pending.keys()].map(flush));
   $("retryBtn").onclick = () => { errMsg = ""; flushAll(); };
+
+  /* ---------- final (10m Air Pistol / Air Rifle) ---------- */
+  // Start list: top 8 from qualification, or picked by hand (a fun final without qualification). Starting freezes it
+  // (final_pos 1-8). Shots go through the save engine like qualification scores (patch_final).
+  const F = Finals;
+  const finCat = () => (UI.fcat === "M" ? "M" : "W");
+  // ticked boxes in the setup pickers live here, so a live redraw (poll, realtime, TH/EN) never unticks them
+  const finPick = new Set(), finTie = new Set();
+  function renderFinal() {
+    const p = $("finalPanel");
+    if (p.hidden) return;
+    const c = comp();
+    // keep the cursor where it was when the panel is redrawn (live updates arrive while typing)
+    const ae = document.activeElement, keep = ae && p.contains(ae) && ae.dataset ? (ae.dataset.fin || ae.dataset.so || "") : "";
+    const head = (sub) => `<h2>${L("รอบชิงชนะเลิศ", "Final")} <small>${sub}</small></h2>`;
+    if (!c) { p.innerHTML = head(""); return; }
+    if (!F.hasFinal(c.event)) { p.innerHTML = head("") + `<p class="empty">${L("รอบชิงมีเฉพาะ 10m Air Pistol และ 10m Air Rifle", "Finals are only for 10m Air Pistol and 10m Air Rifle")}</p><div class="rowbtns"><button type="button" class="ghost" data-fa="close">${L("ปิด", "Close")}</button></div>`; return; }
+    const cat = finCat(), list = [...athletes().values()], mode = F.modeOf(c.event);
+    const fins = F.finalists(list, cat);
+    const catBtns = `<div class="rowbtns" style="margin:0 0 10px">${[["W", "หญิง", "Women"], ["M", "ชาย", "Men"]].map(([k, th, en]) =>
+      `<button type="button" data-fcat="${k}" aria-pressed="${cat === k}">${L(th, en)}</button>`).join("")}
+      <label class="chk"><input type="checkbox" id="showFinalChk"${c.show_final ? " checked" : ""}> ${L("แสดงรอบชิงบนจอใหญ่และหน้าสาธารณะ", "Show the final on the projector and public page")}</label>
+      <span class="spacer"></span><button type="button" class="ghost" data-fa="close">${L("ปิด", "Close")}</button></div>`;
+    const sub = L(mode === "dec" ? "ทศนิยม เช่น 10.4" : "จำนวนเต็ม 0–10 (X = 10)", mode === "dec" ? "decimals, e.g. 10.4" : "whole numbers 0–10 (X = 10)");
+    if (!fins.length) { p.innerHTML = head(sub) + catBtns + finalSetupHTML(list, cat, c.event); return; }
+
+    const st = F.standing(fins, mode), byId = new Map(st.rows.map((r) => [r.a.id, r]));
+    const n = F.FINAL.shots, next = st.nextShot - 1;
+    let th1 = `<tr><th class="l" rowspan="2">#</th><th class="l" rowspan="2">${L("ชื่อ", "Name")}</th><th rowspan="2">${L("รวม", "Total")}</th><th class="l" rowspan="2">${L("ผล", "Result")}</th>`, th2 = "<tr>";   // total + result first: always visible
+    let shot = 0;
+    for (const [i, size] of F.FINAL.series.entries()) { th1 += `<th colspan="${size}">S${i + 1}</th>`; shot += size; }
+    th1 += `<th colspan="${n - shot}">${L("นัดเดี่ยว", "Single shots")}</th></tr>`;
+    for (let i = 0; i < n; i++) th2 += `<th class="${i === next ? "next" : ""}">${i + 1}</th>`;
+    th2 += "</tr>";
+    const body = fins.map((a) => {
+      const r = byId.get(a.id), shots = a.final_shots || [];
+      let tds = "";
+      for (let i = 0; i < n; i++) {
+        const v = shots[i] || "", locked = r.outAt && i >= r.outAt, bad = v && F.shotVals([v], mode).length === 0;
+        tds += `<td class="${i === next && !r.out && !r.place ? "next" : ""}"><input type="text" inputmode="decimal" autocomplete="off" data-fin="${esc(a.id)}:${i}" value="${esc(v)}"${locked ? " disabled" : ""} class="${bad ? "bad" : ""}" aria-label="${esc(a.name)} ${L("นัด", "shot")} ${i + 1}"></td>`;
+      }
+      const res = !r.place ? "" : r.place === 1 ? L("🥇 ชนะเลิศ", "🥇 Gold") : r.place === 2 ? L("🥈 อันดับ 2", "🥈 Silver")
+        : r.place === 3 ? L(`🥉 อันดับ 3 (ตกรอบนัด ${r.outAt})`, `🥉 Bronze (out at ${r.outAt})`) : L(`อันดับ ${r.place} (ตกรอบนัด ${r.outAt})`, `${r.place}th (out at ${r.outAt})`);
+      return `<tr class="${r.out ? "out" : ""}${r.place === 1 ? " gold" : ""}"><td class="l">${a.final_pos}</td><td class="l name">${esc(a.name)}${a.uni ? `<span class="name-uni">${esc(a.uni)}</span>` : ""}</td><td class="total">${S.fmtT(r.total, mode)}</td><td class="l res">${res}</td>${tds}</tr>`;
+    }).join("");
+
+    let status;
+    if (st.status === "shootoff") {
+      const so = st.shootoff, who = so.ids.map((id) => fins.find((a) => a.id === id));
+      status = `<div class="notice err"><b>${so.forGold ? L(`คะแนนเท่ากันเพื่อเหรียญทอง — ยิงตัดสิน (shoot-off) นัดที่ ${so.round + 1}`, `Tie for gold — shoot-off shot ${so.round + 1}`) : L(`คะแนนเท่ากันที่นัด ${so.at} — ยิงตัดสิน (shoot-off) นัดที่ ${so.round + 1} คนที่ได้น้อยกว่าตกรอบ`, `Tie at shot ${so.at} — shoot-off shot ${so.round + 1}; the lower score is out`)}</b>
+        <div class="sorow">${who.map((a) => `<label class="f">${esc(a.name)}<input type="text" inputmode="decimal" autocomplete="off" data-so="${esc(a.id)}:${so.at}:${so.round}" value="${esc(((a.final_so || {})[so.at] || [])[so.round] || "")}"></label>`).join("")}</div></div>`;
+    } else if (st.status === "done") status = `<div class="notice past">${L("รอบชิงจบแล้ว — โพเดียมและเกียรติบัตรใช้ผลรอบชิงนี้", "The final is finished — the podium and certificates use this result")}</div>`;
+    else status = `<p class="meta">${L(`นัดถัดไป: ${st.nextShot} · ตกรอบหลังนัด ${F.elimPoints(fins.length).join(", ") || "—"} · Enter = ลงไปคนถัดไป`, `Next shot: ${st.nextShot} · eliminations after shots ${F.elimPoints(fins.length).join(", ") || "—"} · Enter = next athlete`)}</p>`;
+
+    p.innerHTML = head(sub) + catBtns + status +
+      `<div class="tablebox"><table class="fgrid"><thead>${th1}${th2}</thead><tbody>${body}</tbody></table></div>
+      <div class="rowbtns"><button type="button" class="ghost" data-fa="cancel">${L("ยกเลิกรอบชิงประเภทนี้", "Cancel this final")}</button></div>`;
+    if (keep) {
+      const el = [...p.querySelectorAll("[data-fin],[data-so]")].find((x) => (x.dataset.fin || x.dataset.so) === keep);
+      if (el && !el.disabled) { el.focus(); const len = el.value.length; el.setSelectionRange(len, len); }
+    }
+  }
+
+  // Not started yet: from qualification (top 8; staff pick when 8th place is an exact tie) or picked by hand.
+  function finalSetupHTML(list, cat, key) {
+    const sl = F.startList(list, cat, key), name = (id) => esc((athletes().get(id) || {}).name || "?");
+    const max = F.FINAL.maxFinalists, room = max - sl.ids.length, total = sl.ids.length + sl.tie.length;
+    const qual = total >= F.FINAL.minFinalists
+      ? `<p>${sl.ids.map((id, i) => `<span class="fchip">${i + 1}. ${name(id)}</span>`).join(" ")}</p>` +
+        (sl.tie.length ? `<p class="notice">${L(`อันดับ 8 คะแนนเท่ากันทุกอย่าง — เลือก ${room} คน`, `Exact tie for 8th place — choose ${room}`)}<br>${sl.tie.map((id) => `<label class="chk"><input type="checkbox" data-tie="${esc(id)}"${finTie.has(id) ? " checked" : ""}> ${name(id)}</label>`).join(" ")}</p>` : "") +
+        `<button type="button" class="primary" data-fa="startQual">${L(`เริ่มรอบชิงจากรอบคัดเลือก (${Math.min(max, total)} คน)`, `Start from qualification (${Math.min(max, total)})`)}</button>`
+      : `<p class="meta">${L("ยังไม่มีคะแนนรอบคัดเลือกพอ", "Not enough qualification scores yet")}</p>`;
+    const people = list.filter((a) => (a.cat || "W") === cat).sort((p, q) => String(p.name).localeCompare(String(q.name), "th"));
+    const manual = people.length
+      ? `<p>${people.map((a) => `<label class="chk"><input type="checkbox" data-pick="${esc(a.id)}"${finPick.has(a.id) ? " checked" : ""}> ${esc(a.name)}</label>`).join(" ")}</p>
+        <button type="button" data-fa="startManual">${L("เริ่มรอบชิงกับคนที่เลือก (2–8 คน)", "Start with the selected athletes (2–8)")}</button>`
+      : `<p class="meta">${L("ยังไม่มีนักกีฬาในประเภทนี้ — เพิ่มชื่อในตารางด้านล่างก่อน", "No athletes in this category yet — add them in the table below first")}</p>`;
+    return `<div class="fsetup"><div><h3>${L("1. จากรอบคัดเลือก (8 อันดับแรก)", "1. From qualification (top 8)")}</h3>${qual}</div>
+      <div><h3>${L("2. เลือกเอง (เช่น รอบชิงเพื่อความสนุก ไม่ต้องมีรอบคัดเลือก)", "2. Pick athletes (e.g. a fun final without qualification)")}</h3>${manual}</div></div>`;
+  }
+
+  async function startFinal(ids) {
+    finPick.clear(); finTie.clear();
+    for (const [i, id] of ids.entries()) {
+      const res = await run(() => sb.from("athletes").update({ final_pos: i + 1, final_shots: [], final_so: {} }).eq("id", id).select("id"));
+      if (!res) return;
+    }
+    if (W) await W.refresh();
+    renderFinal();
+  }
+  async function cancelFinal(cat) {
+    for (const a of F.finalists([...athletes().values()], cat)) {
+      if (pending.has(a.id)) { pending.get(a.id).fin = {}; pending.get(a.id).so = {}; }
+      const res = await run(() => sb.from("athletes").update({ final_pos: null, final_shots: [], final_so: {} }).eq("id", a.id).select("id"));
+      if (!res) return;
+    }
+    if (W) await W.refresh();
+    renderFinal();
+  }
+  // one entry: update the row we show right away and queue the save (the redraw happens on change / Enter)
+  function finalInput(el) {
+    const key = el.dataset.fin || el.dataset.so, a = athletes().get(key.split(":")[0]);
+    if (!a) return;
+    const v = el.value.trim();
+    if (el.dataset.fin) {
+      const i = +key.split(":")[1];
+      a.final_shots = Array.from(a.final_shots || [], (x) => x || "");
+      while (a.final_shots.length <= i) a.final_shots.push("");
+      a.final_shots[i] = v;
+      queueSave(a.id, { fin: { [i]: v } });
+    } else {
+      const [, at, round] = key.split(":");
+      a.final_so = { ...(a.final_so || {}) };
+      const arr = Array.from(a.final_so[at] || [], (x) => x || "");
+      while (arr.length <= +round) arr.push("");
+      arr[+round] = v; a.final_so[at] = arr;
+      queueSave(a.id, { so: { [at]: { [round]: v } } });
+    }
+  }
+  $("finalBtn").onclick = () => { const p = $("finalPanel"); p.hidden = !p.hidden; renderFinal(); };
+  $("finalPanel").addEventListener("change", (e2) => {
+    if (e2.target.id === "showFinalChk") patchComp({ show_final: e2.target.checked });
+    else if (e2.target.dataset.pick) { e2.target.checked ? finPick.add(e2.target.dataset.pick) : finPick.delete(e2.target.dataset.pick); }
+    else if (e2.target.dataset.tie) { e2.target.checked ? finTie.add(e2.target.dataset.tie) : finTie.delete(e2.target.dataset.tie); }
+    else if (e2.target.dataset.fin || e2.target.dataset.so) setTimeout(renderFinal, 0);
+  });
+  $("finalPanel").addEventListener("input", (e2) => { if (e2.target.dataset.fin || e2.target.dataset.so) finalInput(e2.target); });
+  $("finalPanel").addEventListener("keydown", (e2) => {
+    const el = e2.target;
+    if (e2.key !== "Enter" || !el.dataset || !el.dataset.fin) return;
+    e2.preventDefault();
+    // everyone fires the same shot: Enter goes down the column, then to the top of the next column
+    const i = +el.dataset.fin.split(":")[1], id = el.dataset.fin.split(":")[0];
+    const order = [...$("finalPanel").querySelectorAll(`[data-fin$=":${i}"]:not(:disabled)`)].map((x) => x.dataset.fin.split(":")[0]);
+    renderFinal();
+    const cell = (aid, col) => [...$("finalPanel").querySelectorAll("[data-fin]")].find((x) => x.dataset.fin === `${aid}:${col}` && !x.disabled);
+    const nextId = order[order.indexOf(id) + 1];
+    const target = (nextId && cell(nextId, i)) || [...$("finalPanel").querySelectorAll(`[data-fin$=":${i + 1}"]`)].find((x) => !x.disabled);
+    if (target) { target.focus(); target.select(); }
+  });
+  $("finalPanel").addEventListener("click", (e2) => {
+    const b = e2.target.closest("[data-fcat],[data-fa]");
+    if (!b) return;
+    if (b.dataset.fcat) { UI.fcat = b.dataset.fcat; saveUI(); finPick.clear(); finTie.clear(); renderFinal(); return; }
+    const act = b.dataset.fa, cat = finCat(), c = comp();
+    if (act === "close") { $("finalPanel").hidden = true; return; }
+    if (!c) return;
+    if (act === "startQual") {
+      const sl = F.startList([...athletes().values()], cat, c.event);
+      const over = sl.ids.length + sl.tie.length > F.FINAL.maxFinalists, room = F.FINAL.maxFinalists - sl.ids.length;
+      const picked = sl.tie.filter((id) => finTie.has(id));
+      if (over && picked.length !== room) { alert(L(`เลือกผู้เข้ารอบจากคนที่คะแนนเท่ากัน ${room} คน`, `Choose ${room} of the tied athletes`)); return; }
+      startFinal(sl.ids.concat(over ? picked : sl.tie));
+    } else if (act === "startManual") {
+      const ids = [...finPick].filter((id) => { const a = athletes().get(id); return a && (a.cat || "W") === cat; });
+      if (ids.length < F.FINAL.minFinalists || ids.length > F.FINAL.maxFinalists) { alert(L("เลือก 2–8 คน", "Choose 2 to 8 athletes")); return; }
+      startFinal(ids);
+    } else if (act === "cancel") {
+      confirmUI($("confirmBox"), L("ยกเลิกรอบชิงประเภทนี้? คะแนนรอบชิงของประเภทนี้จะถูกลบทั้งหมด (คะแนนรอบคัดเลือกไม่หาย)", "Cancel this final? All final shots of this category are deleted (qualification scores are kept)."), L("ยกเลิกรอบชิง", "Cancel final"), () => cancelFinal(cat));
+      $("confirmBox").scrollIntoView({ block: "nearest" });
+    }
+  });
 
   /* ---------- auth ---------- */
   let deniedErr = null;
@@ -194,6 +359,7 @@
     if (UI.sel && !s.athletes.has(UI.sel)) UI.sel = null;
     renderCompSel(); renderMeta(); renderTabs(); renderBoard();
     if (!$("card").contains(document.activeElement) && !$("keypad").contains(document.activeElement)) renderCard(); else updateCardTotals();
+    renderFinal();
   }
 
   /* ---------- competitions ---------- */
@@ -206,7 +372,7 @@
   }
   function renderMeta() {
     const c = comp();
-    for (const id of ["compName", "event", "teamSize", "activeBtn", "delCompBtn", "importBtn", "copyBtn", "histBtn", "printBtn2", "certBtn", "xlsxBtn", "nowSel", "podiumChk"]) $(id).disabled = !c;
+    for (const id of ["compName", "event", "teamSize", "activeBtn", "delCompBtn", "importBtn", "copyBtn", "histBtn", "printBtn2", "certBtn", "finalBtn", "xlsxBtn", "nowSel", "podiumChk"]) $(id).disabled = !c;
     $("addForm").hidden = !c;
     if (!c) { $("subline").textContent = L("สร้างการแข่งขันก่อน · Create a competition to begin", "Create a competition to begin"); $("links").innerHTML = ""; $("activeBadge").hidden = true; return; }
     $("event").value = c.event;
@@ -315,7 +481,7 @@
         emptyHint: comp() ? L("เพิ่มชื่อด้านล่าง หรือกด <b>วางจาก Excel</b> เพื่อนำเข้าทั้งรายชื่อ", "Add names below, or press <b>Paste from Excel</b> to import the whole list") : "" });
     if (!comp() && !(W && !(s && s.loaded))) $("tbody").innerHTML = `<tr><td colspan="20" class="empty">${L("ยังไม่มีการแข่งขัน — กด “+ สร้างการแข่งขัน”", "No competition yet — press “+ New competition”")}</td></tr>`;
   }
-  function renderAll() { renderCompSel(); renderMeta(); renderTabs(); renderBoard(); renderCard(); setSave(); }
+  function renderAll() { renderCompSel(); renderMeta(); renderTabs(); renderBoard(); renderCard(); renderFinal(); setSave(); }
   $("tabs").addEventListener("click", (c) => { const b = c.target.closest("[data-t]"); if (b) { UI.tab = +b.dataset.t; saveUI(); renderTabs(); renderBoard(); } });
   function select(id) {
     UI.sel = id; saveUI(); renderBoard(); renderCard();
