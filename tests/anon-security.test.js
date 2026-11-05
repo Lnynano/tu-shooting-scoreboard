@@ -28,6 +28,7 @@ async function call(method, p, body) {
 
   // public reads must work
   expect("anon read competitions", await call("GET", "/rest/v1/competitions?select=id&limit=1"), [200]);
+  expect("anon read podium switch", await call("GET", "/rest/v1/competitions?select=show_podium&limit=1"), [200]);
   expect("anon read athletes", await call("GET", "/rest/v1/athletes?select=id&limit=1"), [200]);
 
   // private reads must be refused
@@ -41,6 +42,7 @@ async function call(method, p, body) {
   expect("anon insert athlete_log", await call("POST", "/rest/v1/athlete_log", {}), DENY);
   expect("anon update athletes", await call("PATCH", `/rest/v1/athletes?id=eq.${NOROW}`, { name: "x" }), DENY);
   expect("anon update competitions", await call("PATCH", `/rest/v1/competitions?id=eq.${NOROW}`, { name: "x" }), DENY);
+  expect("anon turn on podium", await call("PATCH", `/rest/v1/competitions?id=eq.${NOROW}`, { show_podium: true }), DENY);
   expect("anon delete athletes", await call("DELETE", `/rest/v1/athletes?id=eq.${NOROW}`), DENY);
   expect("anon delete competitions", await call("DELETE", `/rest/v1/competitions?id=eq.${NOROW}`), DENY);
   expect("anon rpc patch_athlete", await call("POST", "/rest/v1/rpc/patch_athlete", { aid: NOROW }), DENY);

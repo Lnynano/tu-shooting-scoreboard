@@ -54,10 +54,11 @@
   <main>
     <section class="panel" aria-labelledby="resH">
       <h2 id="resH"><span id="boardTitle">ผลการแข่งขัน</span> <small id="evInfo"></small></h2>
-      <div class="tablebox"><table>
+      <div class="tablebox" id="tableBox"><table>
         <thead id="thead"></thead>
         <tbody id="tbody"></tbody>
       </table></div>
+      <div id="podium" hidden></div>
     </section>
   </main>
 </div>
@@ -90,6 +91,13 @@
       { athletes: list, event: comp ? comp.event : "ap60", teamSize: comp ? comp.team_size : 3, nowRelay: comp ? comp.current_relay : "", tab, loading: !state || !state.loaded });
     if (state && state.loaded && !comp)
       $("tbody").innerHTML = Render.noActiveHTML();
+    // award ceremony: staff ticked "Podium on projector" -> top 3 of this tab instead of the table
+    const podium = !!(comp && comp.show_podium);
+    $("tableBox").hidden = podium; $("podium").hidden = !podium;
+    if (podium) {
+      const p = Render.podiumHTML({ athletes: list, event: comp.event, teamSize: comp.team_size, tab });
+      $("boardTitle").textContent = p.title; $("evInfo").textContent = p.info; $("podium").innerHTML = p.html;
+    }
   }
   function go(i) { tab = (i + 4) % 4; started = Date.now(); draw(); }
   // auto-cycle and arrow keys skip empty tabs; clicking a tab still opens it

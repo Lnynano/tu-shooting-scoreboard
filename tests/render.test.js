@@ -47,6 +47,12 @@ for (const evil of EVIL) {
     checks++;
   }
   assertSafe(R.detailHTML(athletes[0], athletes, "ap60"), "detailHTML / " + evil.slice(0, 18));
+  for (let tab = 0; tab < 4; tab++) {
+    const scored = athletes.map((a) => ({ ...a, cat: tab < 2 ? "W" : "M", ser: ["95", "94", "93"] }));
+    const p = R.podiumHTML({ athletes: scored, event: "ap30", teamSize: 3, tab });
+    assertSafe(p.html + p.title + p.info, `podiumHTML tab ${tab} / ${evil.slice(0, 18)}`);
+    checks++;
+  }
   checks++;
 }
 
@@ -60,6 +66,24 @@ assert.ok(!/[<>]/.test(R.subline({ name: "Plain", event: "ap60" })));
 assert.strictEqual(R.nowText({ current_relay: "2" }).includes("2"), true);
 assert.strictEqual(R.nowText({ current_relay: "" }), "");
 assert.strictEqual(R.nowText(null), "");
+
+// --- podium: top 3 laid out 2-1-3, ties share a step, unscored athletes and empty teams left out
+{
+  const a = (id, name, uni, s, cat = "W") => ({ id, name, uni, cat, relay: "1", lane: id, shots: [], ser: s });
+  const list = [a("1", "Gold", "TU", ["98", "97", "96-5x"]), a("2", "Silver", "KU", ["97", "97", "96"]), a("3", "BronzeA", "CU", ["95", "95", "95"]),
+    a("4", "BronzeB", "MU", ["95", "95", "95"]), a("5", "Fifth", "TU", ["90", "90", "90"]), a("6", "NoScore", "TU", [])];
+  const p = R.podiumHTML({ athletes: list, event: "ap30", teamSize: 2, tab: 0 });
+  const cols = p.html.split('<div class="pcol ').slice(1).map((c) => c.slice(0, 2) + " " + (c.match(/class="pname">([^<]+)/g) || []).map((m) => m.slice(14)).join(","));
+  assert.deepStrictEqual(cols, ['p2 Silver', 'p1 Gold', 'p3 BronzeA,BronzeB'], "2-1-3 order; exact tie shares 3rd");
+  assert.ok(p.html.includes("291<small>5x</small>"), "integer events show X count");
+  assert.ok(!p.html.includes("Fifth") && !p.html.includes("NoScore"));
+  const t = R.podiumHTML({ athletes: list, event: "ap30", teamSize: 2, tab: 1 });
+  const first = t.html.split('class="pcol p1"')[1].split('class="pcol p3"')[0];
+  assert.ok(first.includes(">TU<") && first.includes("Gold · Fifth") && first.includes(">561<"), "team winner: TU, counted members, best-2 total");
+  const dec = R.podiumHTML({ athletes: [a("r", "Rifle", "TU", ["104.5", "100.0", "99.9"])], event: "ar30", teamSize: 3, tab: 0 });
+  assert.ok(dec.html.includes(">304.4<") && !dec.html.includes("<small>"), "decimal total, no X");
+  assert.ok(R.podiumHTML({ athletes: [], event: "ap30", teamSize: 3, tab: 2 }).html.includes('class="empty"'), "empty category message");
+}
 
 // --- board auto-cycle skips empty tabs (tabs: women, women team, men, men team)
 assert.strictEqual(R.nextTab(0, 1, [3, 1, 4, 2]), 1, "normal step");

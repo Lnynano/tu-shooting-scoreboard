@@ -29,15 +29,15 @@ Every page has a **Thai / English** switch and a **light / dark** button (rememb
 | `js/vendor/supabase.js`                  | supabase-js 2.49.4 (MIT) เก็บไว้ในโปรเจกต์ ไม่โหลดจาก CDN — หน้าเว็บเปิดได้แม้ CDN ถูกบล็อกที่สนาม |
 | `js/xlsx.js`                             | สร้างไฟล์ Excel (.xlsx) ในเบราว์เซอร์ ไม่ใช้ไลบรารีภายนอก                       |
 | `css/style.css`, `css/print.css`         | หน้าตา (แดง-ขาว สว่าง / แดง-ดำ มืด) และหน้าพิมพ์                                |
-| `supabase/migrations/*.sql`              | โครงสร้างฐานข้อมูล 001–006 (รันตามลำดับ)                                       |
+| `supabase/migrations/*.sql`              | โครงสร้างฐานข้อมูล 001–007 (รันตามลำดับ)                                       |
 | `templates/athlete-import-template.xlsx` | เทมเพลต Excel สำหรับนำเข้ารายชื่อ                                              |
 | `tests/scoring.test.js`, `prototype/`    | ทดสอบ logic เทียบกับต้นแบบเดิม                                                  |
 
 ## ตั้งค่า Supabase / Supabase setup
 
 1. รัน migration ตามลำดับใน SQL Editor (หรือผ่าน Supabase MCP / CLI):
-   `001_init.sql` ตาราง + RLS + realtime · `002_harden.sql` · `003_set_active.sql` ตั้งรายการที่แสดงทีละหนึ่ง · `004_patch_athlete.sql` บันทึกแบบแก้เฉพาะจุด (สองคนกรอกพร้อมกันไม่ทับกัน) · `005_athlete_log.sql` ประวัติการแก้ไข · `006_current_relay.sql` ผลัดที่กำลังยิง
-   Run the migrations in order (001 → 006).
+   `001_init.sql` ตาราง + RLS + realtime · `002_harden.sql` · `003_set_active.sql` ตั้งรายการที่แสดงทีละหนึ่ง · `004_patch_athlete.sql` บันทึกแบบแก้เฉพาะจุด (สองคนกรอกพร้อมกันไม่ทับกัน) · `005_athlete_log.sql` ประวัติการแก้ไข · `006_current_relay.sql` ผลัดที่กำลังยิง · `007_show_podium.sql` สวิตช์โพเดียมบนจอใหญ่
+   Run the migrations in order (001 → 007).
 2. ทุกคนอ่านได้ (anon `SELECT`) แต่เขียนได้เฉพาะคนที่อยู่ในตาราง `staff` (RLS + `is_staff()`). ประวัติ (`athlete_log`) อ่านได้เฉพาะ staff และเขียนผ่าน trigger เท่านั้น
    Everyone can read the scoreboard; only users in `staff` can write; the history table is staff-read-only and written only by a trigger.
 3. แนะนำ: Dashboard → Authentication → Sign In / Providers → ปิด _Allow new users to sign up_ และเปิด _Leaked password protection_ (ถ้าแพ็กเกจรองรับ)
@@ -76,6 +76,9 @@ A signed-in user who is not in `staff` sees “not allowed” and cannot write.
 - บันทึกอัตโนมัติ ~0.4 วินาที สถานะที่มุมขวา (“✓ บันทึกแล้ว”) ถ้าผิดพลาดจะมีปุ่ม **ลองบันทึกใหม่** · สองคนแก้นักกีฬาคนเดียวกันพร้อมกันได้ ระบบบันทึกเฉพาะที่แก้ จึงไม่ทับกัน
 
 **กำลังยิง / Now shooting** — เลือก “กำลังยิง” ที่แถบด้านบนของหน้า staff (รายชื่อผลัดมาจากนักกีฬาในรายการ) หน้าสาธารณะและจอใหญ่จะไฮไลต์แถวของผลัดนั้นและมีป้าย “● กำลังยิง: ผลัด N” — เลือก “— ไม่ระบุ —” เพื่อปิด
+
+**โพเดียม / Podium** — ติ๊ก **แสดงโพเดียมบนจอใหญ่** ที่แถบด้านบนของหน้า staff ตอนมอบรางวัล จอใหญ่จะเปลี่ยนจากตารางเป็น 3 อันดับแรกของแต่ละประเภท (บุคคล/ทีม หญิง/ชาย สลับให้อัตโนมัติ ข้ามประเภทที่ว่าง; คะแนนเท่ากันทุกอย่างยืนขั้นเดียวกัน) — เอาติ๊กออกเพื่อกลับเป็นตาราง
+Tick **Podium on projector** for the award ceremony: the board shows the top 3 of each category instead of the table. Untick to go back.
 
 **ประวัติการแก้ไข / History** — ปุ่ม **ประวัติการแก้ไข** แสดงใคร แก้อะไร เมื่อไร (150 รายการล่าสุด, กรองเฉพาะนักกีฬาที่เลือกได้)
 
