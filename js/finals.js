@@ -11,7 +11,8 @@
   const S = root.Scoring || (typeof require !== "undefined" ? require("./scoring.js") : null);
 
   // Every number of the format lives here; a rule change is a one-line edit.
-  const FINAL = { shots: 24, series: [5, 5], step: 2, maxFinalists: 8, minFinalists: 2 };
+  // seriesSecs / singleSecs: time allowed for a 5-shot series / a single shot (also used for shoot-off shots).
+  const FINAL = { shots: 24, series: [5, 5], step: 2, maxFinalists: 8, minFinalists: 2, seriesSecs: 250, singleSecs: 50 };
 
   // Only these events have a final; pistol keeps whole-number scoring, rifle is decimal.
   const FINAL_MODE = { ap60: "int", ap40: "int", ap30: "int", ar60: "dec", ar40: "dec", ar30: "dec" };
@@ -156,7 +157,25 @@
     return out;
   }
 
-  const api = { FINAL, FINAL_MODE, hasFinal, modeOf, elimPoints, shotVals, shootOff, standing, stageOf, startList, finalists, medals, draw, finalRows };
+  // The timer that fits the next shot: series 1 / 2 get the series time, single shots (and shoot-offs) the single time.
+  function timerFor(nextShot, shootoff) {
+    if (shootoff) return { label: "SO", secs: FINAL.singleSecs };
+    const stage = stageOf(Math.min(nextShot, FINAL.shots));
+    return stage === "single" ? { label: String(Math.min(nextShot, FINAL.shots)), secs: FINAL.singleSecs } : { label: stage, secs: FINAL.seriesSecs };
+  }
+  // Time left on a running timer at `now` (ms). null = no timer, or it ended more than `linger` seconds ago.
+  // -> {left: whole seconds (0 when over), over, label, cat}
+  function timerLeft(timer, now, linger = 5) {
+    if (!timer || !timer.start || !(timer.secs > 0)) return null;
+    const start = Date.parse(timer.start);
+    if (isNaN(start)) return null;
+    const left = timer.secs - (now - start) / 1000;
+    if (left < -linger || left > timer.secs + 5) return null;   // long over, or a start time far in the future (clock problem)
+    return { left: Math.max(0, Math.ceil(left)), over: left <= 0, label: timer.label || "", cat: timer.cat === "M" ? "M" : "W" };
+  }
+  const fmtClock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+
+  const api = { FINAL, FINAL_MODE, hasFinal, modeOf, elimPoints, shotVals, shootOff, standing, stageOf, startList, finalists, medals, draw, finalRows, timerFor, timerLeft, fmtClock };
   root.Finals = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);
