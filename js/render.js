@@ -93,7 +93,36 @@
 
   /* opts: {athletes[], event, teamSize, tab, selectedId, clickable, loading, emptyHint, filter:{q,relay}}
      returns {title, info, thead, tbody} (HTML strings) */
+  /* Final view of an individual tab (same shape as boardHTML), or null when that category has no final.
+     Rows: those still shooting by total, then by final place. Medal rows are styled by place, never by "out"
+     (the silver medallist is "out" of the gold match but must not look eliminated). */
+  function finalHTML(opts) {
+    const { athletes, event, tab } = opts, [cat, kind, th, en] = S.TABS[tab], F = window.Finals;
+    if (kind !== "ind" || !F || !F.hasFinal(event)) return null;
+    const fins = F.finalists(athletes, cat);
+    if (!fins.length) return null;
+    const mode = F.modeOf(event), st = F.standing(fins, mode), fmt = (t) => S.fmtT(t, mode);
+    const [s1, s2] = F.FINAL.series, n = F.FINAL.shots;
+    const thead = `<tr><th class="l">#</th><th class="l">${L("ชื่อ<small>Name</small>", "Name")}</th><th class="c-ser">S1</th><th class="c-ser">S2</th><th class="l c-ser">${L(`นัดเดี่ยว<small>${s1 + s2 + 1}–${n}</small>`, `Single shots ${s1 + s2 + 1}–${n}`)}</th><th>${L("รวม<small>Total</small>", "Total")}</th><th class="l">${L("สถานะ<small>Status</small>", "Status")}</th></tr>`;
+    const tbody = st.rows.map((r, i) => {
+      const v = F.shotVals(r.a.final_shots, mode).slice(0, r.outAt || n), part = (a, b) => v.slice(a, b);
+      const ser = (a, b) => (part(a, b).length ? fmt(part(a, b).reduce((x, y) => x + y, 0)) : "");
+      const medal = { 1: "🥇", 2: "🥈", 3: "🥉" }[r.place] || "";
+      const status = r.place === 1 ? L("🥇 ชนะเลิศ", "🥇 Gold") : r.place === 2 ? L("🥈 เหรียญเงิน", "🥈 Silver") : r.place === 3 ? L("🥉 เหรียญทองแดง", "🥉 Bronze")
+        : r.place ? L(`ตกรอบหลังนัด ${r.outAt}`, `Out after shot ${r.outAt}`) : `${r.shots}/${n}`;
+      const cls = r.place && r.place <= 3 ? `p${r.place}` : r.out ? "out" : "";
+      return `<tr class="row final ${cls}" data-id="${esc(r.a.id)}"><td class="rank">${medal || r.place || i + 1}</td>
+        <td class="name">${esc(r.a.name)}${r.a.uni ? `<span class="name-uni">${esc(r.a.uni)}</span>` : ""}</td>
+        <td class="ser">${ser(0, s1)}</td><td class="ser">${ser(s1, s1 + s2)}</td>
+        <td class="l singles">${part(s1 + s2, n).map((x) => `<span>${fmt(x)}</span>`).join("")}</td>
+        <td class="total">${v.length ? fmt(r.total) : "–"}</td><td class="l fstat">${status}</td></tr>`;
+    }).join("");
+    const phase = st.status === "done" ? L("จบแล้ว", "finished") : st.status === "shootoff" ? L("ยิงตัดสิน (shoot-off)", "shoot-off") : L(`นัดที่ ${Math.min(st.nextShot, n)}`, `shot ${Math.min(st.nextShot, n)}`);
+    return { title: L(`${th} — รอบชิงชนะเลิศ`, `${en} — Final`), info: `${evName(event)} · ${L("รอบชิง", "Final")} · ${phase}`, thead, tbody, count: { shown: st.rows.length, total: st.rows.length } };
+  }
+
   function boardHTML(opts) {
+    if (opts.showFinal && !opts.loading) { const fh = finalHTML(opts); if (fh) return fh; }   // staff switched the final view on
     const { athletes, event, teamSize, tab } = opts;
     const e = S.ev(event), n = S.nSer(event), [cat, kind, th, en] = S.TABS[tab];
     const cols = n + 7, f = hasFilter(opts.filter) ? opts.filter : null;
@@ -235,5 +264,5 @@
   }
 
   const getParam = (k) => new URLSearchParams(location.search).get(k);
-  window.Render = { esc, statsHTML, boardHTML, paint, tabsHTML, tabCounts, nextTab, podiumHTML, certificatesHTML, setLive, subline, getParam, evName, noActiveHTML, detailHTML, updatedText, nowText };
+  window.Render = { esc, statsHTML, boardHTML, paint, tabsHTML, tabCounts, nextTab, podiumHTML, certificatesHTML, finalHTML, setLive, subline, getParam, evName, noActiveHTML, detailHTML, updatedText, nowText };
 })();

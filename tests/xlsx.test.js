@@ -73,4 +73,15 @@ assert.ok(/^[^\\/:*?"<>|]+\.xlsx$/.test(X.fileName({ name: 'a/b:c*?"<>|' })));
   assert.ok(/<c r="L2"><v>600<\/v><\/c>/.test(ip), "integer events stay whole numbers");
 }
 
+// --- a category with a final gets a final sheet (before its qualification sheet)
+{
+  global.Finals = require("../js/finals.js");
+  const f = (id, pos, v) => ({ id, name: "Fin" + id, uni: "TU", cat: "W", relay: "1", lane: id, shots: [], ser: ["100.0"], final_pos: pos, final_shots: Array(24).fill(v), final_so: {} });
+  const xml = new TextDecoder().decode(X.resultsWorkbook({ name: "fin", event: "ar60", team_size: 3 }, [f("1", 1, "10.5"), f("2", 2, "10.0")]));
+  assert.ok(xml.includes('name="รอบชิงหญิง"'), "final sheet named");
+  assert.ok(xml.indexOf('name="รอบชิงหญิง"') < xml.indexOf('name="บุคคลหญิง"'), "final sheet comes first");
+  assert.ok(/<c r="AB2" s="2"><v>252<\/v><\/c>/.test(xml), "winner total 24 x 10.5 = 252.0 in the Total column");
+  delete global.Finals;
+}
+
 console.log("OK — xlsx container, CRCs, escaping and numbers verified");
