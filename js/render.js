@@ -10,12 +10,22 @@
     return S.fmtT(st.t, mode) + (mode === "int" || st.x ? `<span class="x">-${st.x}x</span>` : "");
   }
 
+  // individual tabs count athletes, team tabs count teams (same grouping as the team table)
+  const tabCounts = (athletes) => S.TABS.map(([cat, kind]) =>
+    kind === "ind" ? athletes.filter((a) => (a.cat || "W") === cat).length : S.teams(athletes, cat, "ap60", 3).length);
+
   function tabsHTML(tab, athletes) {
-    return S.TABS.map(([cat, kind, th, en], i) => {
-      // individual tabs count athletes, team tabs count teams (same grouping as the team table)
-      const c = kind === "ind" ? athletes.filter((a) => (a.cat || "W") === cat).length : S.teams(athletes, cat, "ap60", 3).length;
-      return `<button type="button" data-t="${i}" aria-pressed="${tab === i}">${L(th, en)}<span class="c">${c}</span></button>`;
-    }).join("");
+    const counts = tabCounts(athletes);
+    return S.TABS.map(([, , th, en], i) =>
+      `<button type="button" data-t="${i}" aria-pressed="${tab === i}">${L(th, en)}<span class="c">${counts[i]}</span></button>`).join("");
+  }
+
+  // Next tab in direction step (+1 / -1), skipping tabs with nothing in them (e.g. no women entered).
+  // When every tab is empty it simply moves one step.
+  function nextTab(tab, step, counts) {
+    const n = counts.length;
+    for (let k = 1; k <= n; k++) { const i = (((tab + step * k) % n) + n) % n; if (counts[i] > 0) return i; }
+    return (((tab + step) % n) + n) % n;
   }
 
   const noActiveHTML = () => `<tr><td colspan="20" class="empty">${L("ยังไม่มีการแข่งขันที่เปิดแสดงอยู่", "No active competition")}</td></tr>`;
@@ -177,5 +187,5 @@
   }
 
   const getParam = (k) => new URLSearchParams(location.search).get(k);
-  window.Render = { esc, statsHTML, boardHTML, paint, tabsHTML, setLive, subline, getParam, evName, noActiveHTML, detailHTML, updatedText, nowText };
+  window.Render = { esc, statsHTML, boardHTML, paint, tabsHTML, tabCounts, nextTab,setLive, subline, getParam, evName, noActiveHTML, detailHTML, updatedText, nowText };
 })();

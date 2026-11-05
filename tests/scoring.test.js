@@ -91,4 +91,22 @@ for (const key of Object.keys(S.EVENTS)) {
   assert.strictEqual(S.teams([mk("p", "มหาวิทยาลัย  ธรรมศาสตร์", ["90"]), mk("q", "มหาวิทยาลัย ธรรมศาสตร์", ["90"])], "W", "ap30", 3).length, 1, "extra inner spaces ignored");
   assert.strictEqual(S.teams([mk("x", "KU", ["90"]), mk("y", "ku", ["90"]), mk("z", "ku", ["90"])], "W", "ap30", 3)[0].uni, "ku", "most common spelling wins");
 }
+// --- CSV / TSV: text that starts like a formula is neutralised; numbers and normal text are not touched
+{
+  assert.strictEqual(S.safeCell("=HYPERLINK(\"http://x\")"), "'=HYPERLINK(\"http://x\")");
+  for (const t of ["+1", "-2", "@SUM(A1)", "\tx", "\rx"]) assert.strictEqual(S.safeCell(t), "'" + t, JSON.stringify(t));
+  for (const t of ["TU", "สมหญิง", "1", "95.4", "", 5, -3, null]) assert.strictEqual(S.safeCell(t), t, JSON.stringify(t));
+  const evil = [{ id: "e", name: "=1+1", uni: "@TU", cat: "W", relay: "1", lane: "1", shots: [], ser: ["90"] }];
+  const csv = S.toCSV(evil, "ap30", 3, "t"), tsv = S.toTSV(evil, "ap30", 3, "t");
+  assert.ok(csv.includes(",'=1+1,") && csv.includes(",'@TU,"), "CSV cells prefixed");
+  assert.ok(tsv.includes("\t'=1+1\t") && !/(^|\t)=/m.test(tsv), "TSV cells prefixed, no cell starts with =");
+}
+
+// --- athletes with no score yet are listed by relay as a number: 2 before 10
+{
+  const r = (id, relay, lane) => ({ id, name: id, uni: "", cat: "W", relay, lane, shots: [], ser: [] });
+  const order = S.ranked([r("a", "10", "1"), r("b", "2", "1"), r("c", "1", "2"), r("d", "1", "10"), r("e", "", "1")], "W", "ap60").map((x) => x.a.id);
+  assert.deepStrictEqual(order, ["e", "c", "d", "b", "a"], "relay and lane sorted numerically");
+}
+
 console.log(`OK — ${checks} comparisons against the prototype logic matched`);

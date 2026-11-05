@@ -5,6 +5,8 @@
   const sb = window.supabase.createClient(cfg.url, cfg.key);
 
   const byName = (a, b) => String(a.name).localeCompare(String(b.name), "th") || (a.id < b.id ? -1 : 1);
+  // competition ids are UUIDs; a broken ?c= link (cut-off QR text, typo) is treated as "not found" instead of a database error
+  const isId = (v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || ""));
 
   /* Watch one competition (by id, or the active one when id is null) and its athletes.
      onChange(state): state = {comp, athletes: Map, list(): sorted array, loaded}
@@ -34,19 +36,20 @@
     }
 
     async function fetchComp() {
+      if (id && !isId(id)) return null;
       let q = sb.from("competitions").select("*");
       q = id ? q.eq("id", id) : q.eq("is_active", true).order("created_at", { ascending: false }).limit(1);
       const { data, error } = await q.maybeSingle();
       if (error) throw error;
       return data;
     }
-    async function fetchAthletes() {
-      if (!S.comp) { S.athletes = new Map(); return; }
-      const { data, error } = await sb.from("athletes").select("*").eq("competition_id", S.comp.id);
-      if (error) throw error;
+    async function fetchAthletes(comp) {
       const next = new Map();
+      if (!comp) return next;
+      const { data, error } = await sb.from("athletes").select("*").eq("competition_id", comp.id);
+      if (error) throw error;
       for (const r of data) next.set(r.id, tf(r));
-      S.athletes = next;
+      return next;
     }
 
     function subAthletes() {
@@ -64,19 +67,25 @@
     }
 
     // Full reload (comp + athletes). Used on start, reconnect, and as a 30s safety net.
+    // Several can overlap (poll, reconnect, competition change); only the newest one may write its result,
+    // so a slow older reply never replaces newer data.
+    let seq = 0;
     async function refresh() {
+      const my = ++seq;
       try {
         const comp = await fetchComp();
+        if (my !== seq || stopped) return;
         const changed = (comp && comp.id) !== (S.comp && S.comp.id);
         S.comp = comp;
         if (changed) subAthletes();
-        await fetchAthletes();
+        const next = await fetchAthletes(comp);
+        if (my !== seq || stopped) return;
+        S.athletes = next;
         S.loaded = true;
         emit();
         if (lastStatus.startsWith("error")) recompute();
       } catch (e) {
-        S.loaded = S.loaded || false;
-        status("error", e.message || String(e));
+        if (my === seq) status("error", e.message || String(e));
       }
     }
 
@@ -108,5 +117,5 @@
     return data;
   }
 
-  window.TU = { sb, watch, listCompetitions };
+  window.TU = { sb, watch, listCompetitions, isId };
 })();

@@ -61,4 +61,13 @@ assert.strictEqual(R.nowText({ current_relay: "2" }).includes("2"), true);
 assert.strictEqual(R.nowText({ current_relay: "" }), "");
 assert.strictEqual(R.nowText(null), "");
 
+// --- board auto-cycle skips empty tabs (tabs: women, women team, men, men team)
+assert.strictEqual(R.nextTab(0, 1, [3, 1, 4, 2]), 1, "normal step");
+assert.strictEqual(R.nextTab(1, 1, [0, 0, 4, 2]), 2, "skips nothing when next is full");
+assert.strictEqual(R.nextTab(3, 1, [0, 0, 4, 2]), 2, "wraps past the empty women tabs");
+assert.strictEqual(R.nextTab(2, -1, [0, 0, 4, 2]), 3, "backwards also skips");
+assert.strictEqual(R.nextTab(2, 1, [0, 0, 4, 0]), 2, "only one tab has rows: stay on it");
+assert.strictEqual(R.nextTab(0, 1, [0, 0, 0, 0]), 1, "all empty: plain step");
+assert.deepStrictEqual(R.tabCounts([{ cat: "M", uni: "TU" }, { cat: "M", uni: "KU" }, { cat: "W", uni: "" }]), [1, 0, 2, 2], "counts athletes and teams per tab");
+
 console.log(`OK — render escaping verified (${checks} hostile-text renders, 6 payloads)`);

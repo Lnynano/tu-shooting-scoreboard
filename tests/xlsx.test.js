@@ -62,4 +62,15 @@ assert.strictEqual(S.resultTables([mk("1", "A", "TU", "W", ["104.5", "105.1", "1
 
 // file name is safe
 assert.ok(/^[^\\/:*?"<>|]+\.xlsx$/.test(X.fileName({ name: 'a/b:c*?"<>|' })));
+// --- decimal events: whole-number totals keep one decimal place (600.0, not 600) via the 0.0 style (s="2")
+{
+  const ar = [{ id: "d1", name: "Rifle", uni: "TU", cat: "W", relay: "1", lane: "1", shots: [], ser: ["100.0", "100.0", "100.0", "100.0", "100.0", "100.0"] }];
+  const xml = new TextDecoder().decode(X.resultsWorkbook({ name: "dec", event: "ar60", team_size: 3 }, ar));   // parts are stored, not compressed
+  assert.ok(/<c r="F2" s="2"><v>100<\/v><\/c>/.test(xml), "series 100.0 is styled 0.0");
+  assert.ok(/<c r="L2" s="2"><v>600<\/v><\/c>/.test(xml), "total 600.0 is styled 0.0");
+  assert.ok(/<c r="C2" s="2"><v>600<\/v><\/c>/.test(xml), "team total 600.0 is styled 0.0");
+  const ip = new TextDecoder().decode(X.resultsWorkbook({ name: "int", event: "ap60", team_size: 3 }, [{ ...ar[0], ser: ["100", "100", "100", "100", "100", "100"] }]));
+  assert.ok(/<c r="L2"><v>600<\/v><\/c>/.test(ip), "integer events stay whole numbers");
+}
+
 console.log("OK — xlsx container, CRCs, escaping and numbers verified");

@@ -89,6 +89,8 @@
   function resultsWorkbook(comp, athletes, opts) {
     const S = root.Scoring, L = (opts && opts.L) || ((th) => th), now = (opts && opts.now) || new Date();
     const e = S.ev(comp.event), n = S.nSer(comp.event), T = S.resultTables(athletes, comp.event, comp.team_size);
+    // decimal events always show one decimal place, also for whole numbers (600.0, not 600)
+    const sc = (v) => (e.mode === "dec" && typeof v === "number" ? { v, s: S_DEC } : v);
     const sheets = [];
     sheets.push({
       name: L("ข้อมูล", "Info"), widths: [26, 60], rows: [
@@ -106,8 +108,8 @@
     const indWidths = [8, 8, 8, 16, 30, ...Array(n).fill(9), 10, 6, 8], tmWidths = [8, 18, 10, 6, 60, 10];
     const names = { W: [L("บุคคลหญิง", "Women"), L("ทีมหญิง", "Women team")], M: [L("บุคคลชาย", "Men"), L("ทีมชาย", "Men team")] };
     for (const cat of ["W", "M"]) {
-      sheets.push({ name: names[cat][0], header: true, widths: indWidths, rows: [indHead, ...T[cat].ind.map((r) => [r.rank, r.relay, r.lane, r.team, r.name, ...r.ser, r.total, e.mode === "int" ? r.x : r.x || null, r.shots])] });
-      sheets.push({ name: names[cat][1], header: true, widths: tmWidths, rows: [tmHead, ...T[cat].team.map((t) => [t.rank, t.team, t.total, e.mode === "int" ? t.x : t.x || null, t.counted, t.members])] });
+      sheets.push({ name: names[cat][0], header: true, widths: indWidths, rows: [indHead, ...T[cat].ind.map((r) => [r.rank, r.relay, r.lane, r.team, r.name, ...r.ser.map(sc), sc(r.total),e.mode === "int" ? r.x : r.x || null, r.shots])] });
+      sheets.push({ name: names[cat][1], header: true, widths: tmWidths, rows: [tmHead, ...T[cat].team.map((t) => [t.rank, t.team, sc(t.total),e.mode === "int" ? t.x : t.x || null, t.counted, t.members])] });
     }
     return build(sheets);
   }
