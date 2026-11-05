@@ -134,6 +134,7 @@ node tests/import.test.js          # อ่านข้อมูลที่ว�
 node tests/patch.test.js           # ตัวช่วยบันทึก (สองคนกรอกพร้อมกันไม่ทับกัน)
 node tests/athlete-events.test.js  # Realtime รวมถึงการลบนักกีฬา
 node tests/watch.test.js           # โหลดข้อมูลซ้อนกันไม่เอาข้อมูลเก่ามาทับ + ลิงก์ ?c= เสีย
+node tests/finals.test.js          # รอบชิง: ลำดับการตกรอบ, ยิงตัดสิน (shoot-off), ผู้เข้ารอบน้อยกว่า 8, รายชื่อจากรอบคัดเลือก
 node tests/domain.test.js          # CNAME ตรงกับที่อยู่ในแท็กแชร์
 node tests/anon-security.test.js   # ต่อ API จริง: ผู้ชมทั่วไปอ่านผลได้อย่างเดียว (SKIP_NETWORK_TESTS=1 เพื่อข้าม)
 ```

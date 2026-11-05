@@ -32,6 +32,8 @@ jobs:
         run: node tests/athlete-events.test.js
       - name: Live data watcher - newest refresh wins, broken ?c= links
         run: node tests/watch.test.js
+      - name: Finals - elimination order, shoot-offs, start list
+        run: node tests/finals.test.js
       - name: Live API - anonymous visitors can read results and nothing else
         run: node tests/anon-security.test.js
       - name: Custom domain - CNAME matches the share tags
