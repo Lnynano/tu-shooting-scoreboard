@@ -107,6 +107,25 @@ assert.strictEqual(R.nowText(null), "");
   }
 }
 
+// --- final view: replaces the women individual table only when switched on; medal rows by place, not "out"
+{
+  const fa = (id, pos, v, cat = "W") => ({ id, name: "F" + id, uni: "TU", cat, relay: "1", lane: id, shots: [], ser: ["90"], final_pos: pos, final_shots: Array(24).fill(v), final_so: {} });
+  const list = [fa("1", 1, "10.8"), fa("2", 2, "10.7"), fa("3", 3, "10.6"), fa("4", 4, "10.5"), { id: "q", name: "Qonly", uni: "", cat: "W", relay: "1", lane: "9", shots: [], ser: ["99"] }];
+  const on = R.boardHTML({ athletes: list, event: "ar60", teamSize: 3, tab: 0, showFinal: true });
+  assert.ok(on.title.includes("รอบชิง") && on.count.total === 4 && !on.tbody.includes("Qonly"), "final view: finalists only");
+  assert.ok(/class="row final p2"[^>]*><td class="rank">🥈/.test(on.tbody), "silver row styled as medal, not as eliminated");
+  assert.ok(/class="row final out"[^>]*><td class="rank">4</.test(on.tbody), "4th is out");
+  assert.ok(on.tbody.indexOf("F1") < on.tbody.indexOf("F2") && on.tbody.includes("259.2"), "winner first, total 24 x 10.8");
+  assert.ok(!R.boardHTML({ athletes: list, event: "ar60", teamSize: 3, tab: 0 }).title.includes("รอบชิง"), "switch off: qualification table");
+  assert.ok(!R.boardHTML({ athletes: list, event: "ar60", teamSize: 3, tab: 1, showFinal: true }).title.includes("รอบชิง"), "team tab never shows the final");
+  assert.ok(!R.boardHTML({ athletes: list, event: "p25", teamSize: 3, tab: 0, showFinal: true }).title.includes("รอบชิง"), "events without a final ignore it");
+  for (const evil of EVIL) {
+    const h = R.finalHTML({ athletes: [fa("e1", 1, "10.0"), { ...fa("e2", 2, "9.0"), name: evil, uni: evil }], event: "ar60", tab: 0 });
+    assertSafe(h.thead + h.tbody + h.title + h.info, "finalHTML / " + evil.slice(0, 18));
+    checks++;
+  }
+}
+
 // --- board auto-cycle skips empty tabs (tabs: women, women team, men, men team)
 assert.strictEqual(R.nextTab(0, 1, [3, 1, 4, 2]), 1, "normal step");
 assert.strictEqual(R.nextTab(1, 1, [0, 0, 4, 2]), 2, "skips nothing when next is full");

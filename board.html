@@ -89,7 +89,7 @@
     $("tabs").innerHTML = Render.tabsHTML(tab, list);
     Render.paint(
       { title: $("boardTitle"), info: $("evInfo"), thead: $("thead"), tbody: $("tbody") },
-      { athletes: list, event: comp ? comp.event : "ap60", teamSize: comp ? comp.team_size : 3, nowRelay: comp ? comp.current_relay : "", tab, loading: !state || !state.loaded });
+      { athletes: list, event: comp ? comp.event : "ap60", teamSize: comp ? comp.team_size : 3, nowRelay: comp ? comp.current_relay : "", showFinal: !!(comp && comp.show_final), tab, loading: !state || !state.loaded });
     if (state && state.loaded && !comp)
       $("tbody").innerHTML = Render.noActiveHTML();
     // award ceremony: staff ticked "Podium on projector" -> top 3 of this tab instead of the table

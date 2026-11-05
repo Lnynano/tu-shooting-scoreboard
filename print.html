@@ -73,7 +73,10 @@
       if (!h.count.total) continue;
       const menStart = tab >= 2 && !menStarted && sections > 0;
       if (tab >= 2) menStarted = true;
-      html += `<section class="sheet${menStart ? " men-start" : ""}"><h2>${esc(h.title)} <small>${esc(h.info)}</small></h2><table><thead>${h.thead}</thead><tbody>${h.tbody}</tbody></table></section>`;
+      // a category with a final: the final result first (it decides the medals), then the qualification table
+      const fh = Render.finalHTML({ athletes: list, event: comp.event, tab });
+      if (fh) html += `<section class="sheet${menStart ? " men-start" : ""}"><h2>${esc(fh.title)} <small>${esc(fh.info)}</small></h2><table><thead>${fh.thead}</thead><tbody>${fh.tbody}</tbody></table></section>`;
+      html += `<section class="sheet${menStart && !fh ? " men-start" : ""}"><h2>${esc(h.title)}${fh ? L(" — รอบคัดเลือก", " — Qualification") : ""} <small>${esc(h.info)}</small></h2><table><thead>${h.thead}</thead><tbody>${h.tbody}</tbody></table></section>`;
       sections++;
     }
     if (!sections) html += `<p class="empty">${L("ยังไม่มีนักกีฬา", "No athletes yet")}</p>`;

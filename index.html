@@ -101,7 +101,7 @@
     $("stats").innerHTML = comp ? Render.statsHTML(list, comp.event, tab) : "";
     const h = Render.paint(
       { title: $("boardTitle"), info: $("evInfo"), thead: $("thead"), tbody: $("tbody") },
-      { athletes: list, event: comp ? comp.event : "ap60", teamSize: comp ? comp.team_size : 3, nowRelay: comp ? comp.current_relay : "", tab, loading: !state || !state.loaded, filter: F, clickable: true });
+      { athletes: list, event: comp ? comp.event : "ap60", teamSize: comp ? comp.team_size : 3, nowRelay: comp ? comp.current_relay : "", showFinal: !!(comp && comp.show_final), tab, loading: !state || !state.loaded, filter: F, clickable: true });
     const on = !!(F.q.trim() || F.relay);
     $("clearF").hidden = !on;
     if (openId) drawDetail();

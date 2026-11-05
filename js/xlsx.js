@@ -107,7 +107,23 @@
     const tmHead = [L("อันดับ", "Rank"), L("สังกัด", "Team"), L("รวม", "Total"), "X", L("คนที่นับ", "Counted"), L("สมาชิก", "Members")];
     const indWidths = [8, 8, 8, 16, 30, ...Array(n).fill(9), 10, 6, 8], tmWidths = [8, 18, 10, 6, 60, 10];
     const names = { W: [L("บุคคลหญิง", "Women"), L("ทีมหญิง", "Women team")], M: [L("บุคคลชาย", "Men"), L("ทีมชาย", "Men team")] };
+    // final sheet for a category that has a final (place, shots 1-24, total); before its qualification sheet
+    const Fn = root.Finals, finalNames = { W: L("รอบชิงหญิง", "Women final"), M: L("รอบชิงชาย", "Men final") };
+    const finalSheet = (cat) => {
+      if (!Fn || !Fn.hasFinal(comp.event)) return null;
+      const fins = Fn.finalists(athletes, cat);
+      if (!fins.length) return null;
+      const mode = Fn.modeOf(comp.event), st = Fn.standing(fins, mode), n = Fn.FINAL.shots;
+      const num = (t) => (mode === "dec" ? { v: t / 10, s: S_DEC } : t / 10);
+      const head = [L("อันดับ", "Place"), L("ชื่อ", "Name"), L("สังกัด", "Team"), ...Array.from({ length: n }, (_, i) => String(i + 1)), L("รวม", "Total"), L("ตกรอบหลังนัด", "Out after shot")];
+      return { name: finalNames[cat], header: true, widths: [8, 30, 16, ...Array(n).fill(6), 10, 12], rows: [head, ...st.rows.map((r) => {
+        const v = Fn.shotVals(r.a.final_shots, mode).slice(0, r.outAt || n);
+        return [r.place, r.a.name, r.a.uni || "", ...Array.from({ length: n }, (_, i) => (i < v.length ? num(v[i]) : null)), v.length ? num(r.total) : null, r.place > 2 ? r.outAt : null];
+      })] };
+    };
     for (const cat of ["W", "M"]) {
+      const fs = finalSheet(cat);
+      if (fs) sheets.push(fs);
       sheets.push({ name: names[cat][0], header: true, widths: indWidths, rows: [indHead, ...T[cat].ind.map((r) => [r.rank, r.relay, r.lane, r.team, r.name, ...r.ser.map(sc), sc(r.total),e.mode === "int" ? r.x : r.x || null, r.shots])] });
       sheets.push({ name: names[cat][1], header: true, widths: tmWidths, rows: [tmHead, ...T[cat].team.map((t) => [t.rank, t.team, sc(t.total),e.mode === "int" ? t.x : t.x || null, t.counted, t.members])] });
     }

@@ -304,3 +304,11 @@ body.board header .lang-seg button{font-size:clamp(.8rem,1.1vw,1.3rem)}
 .fgrid tr.gold td.name,.fgrid tr.gold td.total{color:var(--medal-1)}
 .sorow{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
 .sorow input{width:5em;font-family:var(--mono);text-align:center}
+/* Final view (board / public page / print): medal rows by place, eliminated rows muted, single shots as a strip */
+tr.row.final td.singles{white-space:normal;line-height:1.7}
+tr.row.final td.singles span{display:inline-block;font-family:var(--mono);font-size:.82em;min-width:2.9em;text-align:center;margin:0 2px 2px 0;padding:0 3px;border:1px solid var(--line);border-radius:3px}
+tr.row.final td.fstat{white-space:nowrap;font-size:.85em}
+tr.row.final.out td{color:var(--muted)}
+tr.row.final.p1 td.name,tr.row.final.p1 td.total{color:var(--medal-1)}
+tr.row.final.p2 td.name,tr.row.final.p2 td.total{color:var(--medal-2)}
+tr.row.final.p3 td.name,tr.row.final.p3 td.total{color:var(--medal-3)}
