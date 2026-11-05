@@ -42,8 +42,10 @@ Every page has a **Thai / English** switch and a **light / dark** button (rememb
    Everyone can read the scoreboard; only users in `staff` can write; the history table is staff-read-only and written only by a trigger.
 3. แนะนำ: Dashboard → Authentication → Sign In / Providers → ปิด _Allow new users to sign up_ และเปิด _Leaked password protection_ (ถ้าแพ็กเกจรองรับ)
    Recommended: disable public sign-ups and enable leaked-password protection.
-4. ฟรีแพลนของ Supabase จะ **หยุดโปรเจกต์ชั่วคราวถ้าไม่มีการใช้งานราว 1 สัปดาห์** — เปิดเข้าดูโปรเจกต์ก่อนวันแข่ง
-   Free Supabase projects pause after about a week of no activity — open the project before the event.
+4. ฟรีแพลนของ Supabase จะ **หยุดโปรเจกต์ชั่วคราวถ้าไม่มีการใช้งานราว 1 สัปดาห์** — `.github/workflows/keepalive.yml` อ่านข้อมูล 1 แถวทุกวันเพื่อกันไว้ ถ้ารันล้มเหลว GitHub จะส่งอีเมลแจ้ง (กดรันเองได้ที่ Actions → Keep Supabase awake → Run workflow)
+   หมายเหตุ: GitHub ปิดงานตามเวลาเองถ้า repo ไม่มี commit เลย 60 วัน — ถ้าได้อีเมลแจ้งเรื่องนี้ ให้กด Enable workflow; ยังควรเปิดดูโปรเจกต์ก่อนวันแข่ง
+   Free Supabase projects pause after about a week of no activity. `.github/workflows/keepalive.yml` reads one row every day to prevent that; a failed run e-mails the repo owner.
+   GitHub turns off scheduled workflows after 60 days without commits: re-enable it if GitHub e-mails about it, and still check the project before the event.
 
 ## เพิ่ม/ลบเจ้าหน้าที่ / Adding and removing staff
 
